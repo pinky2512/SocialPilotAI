@@ -81,6 +81,13 @@ button.ghost { background: transparent; }
 .status-rejected { background: rgba(255,107,122,0.15); color: var(--danger); }
 .status-published { background: rgba(108,123,255,0.18); color: var(--accent); }
 
+.audit { width: 100%; border-collapse: collapse; font-size: 13px; }
+.audit th, .audit td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.audit th { color: var(--muted); font-weight: 600; }
+.audit .muted { color: var(--muted); }
+.audit .details { color: var(--text); max-width: 380px; word-break: break-word; }
+.tag { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; font-family: ui-monospace, monospace; font-size: 12px; }
+
 .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
 .chip { border-radius: 999px; padding: 6px 12px; font-size: 13px; }
 .chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }

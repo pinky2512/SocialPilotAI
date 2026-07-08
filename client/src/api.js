@@ -48,4 +48,15 @@ export const api = {
   publishPost: (userId, id) =>
     request(`/api/social/posts/${id}/publish`, { method: 'POST', userId }),
   publishDue: (userId) => request('/api/social/publish-due', { method: 'POST', userId }),
+
+  // Audit (append-only trail)
+  audit: (userId, { prefix, action, limit } = {}) => {
+    const q = new URLSearchParams();
+    if (prefix) q.set('prefix', prefix);
+    if (action) q.set('action', action);
+    if (limit) q.set('limit', String(limit));
+    const qs = q.toString();
+    return request(`/api/audit${qs ? `?${qs}` : ''}`, { userId });
+  },
+  auditActions: (userId) => request('/api/audit/actions', { userId }),
 };
