@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { api } from './api.js';
 
 // R0 session model: pick which seeded user you act as. The chosen id is sent as
 // the x-user-id header by the API client. Real OAuth/JWT login arrives with the
@@ -15,9 +16,20 @@ const SessionContext = createContext(null);
 
 export function SessionProvider({ children }) {
   const [userId, setUserId] = useState(2); // default: content creator
+  const [permissions, setPermissions] = useState([]);
   const user = SEEDED_USERS.find((u) => u.id === userId);
+
+  // Load the acting user's permissions from the backend (RBAC source of truth).
+  useEffect(() => {
+    api.me(userId)
+      .then((r) => setPermissions(r.permissions || []))
+      .catch(() => setPermissions([]));
+  }, [userId]);
+
+  const can = (permission) => permissions.includes(permission);
+
   return (
-    <SessionContext.Provider value={{ user, userId, setUserId, users: SEEDED_USERS }}>
+    <SessionContext.Provider value={{ user, userId, setUserId, users: SEEDED_USERS, permissions, can }}>
       {children}
     </SessionContext.Provider>
   );

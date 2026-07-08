@@ -18,11 +18,13 @@ import {
   editPost,
 } from '../agents/socialMediaAgent.js';
 import { submitPostForApproval } from '../agents/governanceAgent.js';
+import { requirePermission } from '../http/rbac.js';
+import { PERMISSIONS } from '../auth/permissions.js';
 
 const router = Router();
 
 // STORY-004 — connect an account.  POST /api/social/accounts { platform, handle }
-router.post('/accounts', requireUser, (req, res) => {
+router.post('/accounts', requireUser, requirePermission(PERMISSIONS.SOCIAL_CONNECT), (req, res) => {
   const { platform, handle, accessToken } = req.body || {};
   try {
     const account = connectAccount({ userId: req.user.id, platform, handle, accessToken });
@@ -33,12 +35,12 @@ router.post('/accounts', requireUser, (req, res) => {
 });
 
 // List the acting user's connected accounts.  GET /api/social/accounts
-router.get('/accounts', requireUser, (req, res) => {
+router.get('/accounts', requireUser, requirePermission(PERMISSIONS.SOCIAL_VIEW), (req, res) => {
   res.json({ accounts: listAccounts(req.user.id) });
 });
 
 // Disconnect.  DELETE /api/social/accounts/:id
-router.delete('/accounts/:id', requireUser, (req, res) => {
+router.delete('/accounts/:id', requireUser, requirePermission(PERMISSIONS.SOCIAL_CONNECT), (req, res) => {
   try {
     const account = disconnectAccount({ userId: req.user.id, accountId: Number(req.params.id) });
     res.json({ account });
@@ -48,19 +50,19 @@ router.delete('/accounts/:id', requireUser, (req, res) => {
 });
 
 // STORY-006 — platform catalog (limits/rules).  GET /api/social/platforms
-router.get('/platforms', requireUser, (_req, res) => {
+router.get('/platforms', requireUser, requirePermission(PERMISSIONS.SOCIAL_VIEW), (_req, res) => {
   res.json({ platforms: platformCatalog() });
 });
 
 // STORY-006 — preview per-platform adaptation.  POST /api/social/preview { text, platforms? }
-router.post('/preview', requireUser, (req, res) => {
+router.post('/preview', requireUser, requirePermission(PERMISSIONS.SOCIAL_SCHEDULE), (req, res) => {
   const { text, platforms } = req.body || {};
   if (!text) return res.status(400).json({ error: 'text is required' });
   res.json({ previews: previewForPlatforms(text, platforms) });
 });
 
 // STORY-005 — schedule posts.  POST /api/social/posts { contentId, accountIds, scheduledAt? }
-router.post('/posts', requireUser, (req, res) => {
+router.post('/posts', requireUser, requirePermission(PERMISSIONS.SOCIAL_SCHEDULE), (req, res) => {
   const { contentId, accountIds, scheduledAt } = req.body || {};
   try {
     const posts = schedulePost({
@@ -76,12 +78,12 @@ router.post('/posts', requireUser, (req, res) => {
 });
 
 // List posts (optionally by status).  GET /api/social/posts?status=approved
-router.get('/posts', requireUser, (req, res) => {
+router.get('/posts', requireUser, requirePermission(PERMISSIONS.SOCIAL_VIEW), (req, res) => {
   res.json({ posts: listPosts({ status: req.query.status }) });
 });
 
 // STORY-008 — revise a draft/rejected post.  PATCH /api/social/posts/:id { postText }
-router.patch('/posts/:id', requireUser, (req, res) => {
+router.patch('/posts/:id', requireUser, requirePermission(PERMISSIONS.SOCIAL_SCHEDULE), (req, res) => {
   try {
     const post = editPost({ postId: Number(req.params.id), editorId: req.user.id, postText: (req.body || {}).postText });
     res.json({ post });
@@ -91,7 +93,7 @@ router.patch('/posts/:id', requireUser, (req, res) => {
 });
 
 // STORY-008 — (re)submit a post for approval.  POST /api/social/posts/:id/submit
-router.post('/posts/:id/submit', requireUser, (req, res) => {
+router.post('/posts/:id/submit', requireUser, requirePermission(PERMISSIONS.SOCIAL_SCHEDULE), (req, res) => {
   try {
     const approval = submitPostForApproval({ postId: Number(req.params.id), requestedBy: req.user.id });
     res.status(201).json({ approval });
@@ -101,7 +103,7 @@ router.post('/posts/:id/submit', requireUser, (req, res) => {
 });
 
 // STORY-007 — publish a single approved post.  POST /api/social/posts/:id/publish
-router.post('/posts/:id/publish', requireUser, (req, res) => {
+router.post('/posts/:id/publish', requireUser, requirePermission(PERMISSIONS.SOCIAL_PUBLISH), (req, res) => {
   try {
     const post = publishPost({ postId: Number(req.params.id), userId: req.user.id });
     res.json({ post });
@@ -112,7 +114,7 @@ router.post('/posts/:id/publish', requireUser, (req, res) => {
 
 // STORY-007 — publish all due approved posts across platforms.
 // POST /api/social/publish-due
-router.post('/publish-due', requireUser, (req, res) => {
+router.post('/publish-due', requireUser, requirePermission(PERMISSIONS.SOCIAL_PUBLISH), (req, res) => {
   res.json({ results: publishDuePosts({ userId: req.user.id }) });
 });
 

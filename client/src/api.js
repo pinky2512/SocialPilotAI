@@ -49,6 +49,9 @@ export const api = {
     request(`/api/social/posts/${id}/publish`, { method: 'POST', userId }),
   publishDue: (userId) => request('/api/social/publish-due', { method: 'POST', userId }),
 
+  // Session / RBAC
+  me: (userId) => request('/api/me', { userId }),
+
   // Audit (append-only trail)
   audit: (userId, { prefix, action, limit } = {}) => {
     const q = new URLSearchParams();

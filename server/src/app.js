@@ -7,6 +7,8 @@ import contentRoutes from './routes/content.js';
 import approvalRoutes from './routes/approvals.js';
 import socialRoutes from './routes/social.js';
 import auditRoutes from './routes/audit.js';
+import { requireUser } from './http/currentUser.js';
+import { getPermissions } from './agents/securityAgent.js';
 
 export function createApp() {
   const app = express();
@@ -32,6 +34,11 @@ export function createApp() {
       },
       docs: 'See README.md and docs/trust-before-intelligence.md',
     });
+  });
+
+  // Current user + their permissions (for UI gating).  GET /api/me
+  app.get('/api/me', requireUser, (req, res) => {
+    res.json({ user: req.user, permissions: getPermissions(req.user.role) });
   });
 
   app.use('/api/content', contentRoutes);

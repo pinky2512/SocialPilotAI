@@ -5,7 +5,7 @@ import { api } from '../api.js';
 // R1 — Social Media: connect accounts (STORY-004), schedule multi-platform posts
 // with per-platform preview (STORY-005/006), and publish approved posts (STORY-007).
 export default function Social() {
-  const { userId } = useSession();
+  const { userId, user, permissions } = useSession();
   const [accounts, setAccounts] = useState([]);
   const [content, setContent] = useState([]);
   const [posts, setPosts] = useState([]);
@@ -32,6 +32,10 @@ export default function Social() {
 
   return (
     <div>
+      <div className="perms-banner">
+        <strong>{user.role}</strong> permissions:{' '}
+        {permissions.length ? permissions.map((p) => <span className="tag" key={p}>{p}</span>) : <em>none</em>}
+      </div>
       {error && <div className="error">{error}</div>}
       <Accounts userId={userId} accounts={accounts} onChanged={refresh} />
       <Scheduler userId={userId} accounts={accounts} content={content} onChanged={refresh} />
@@ -41,6 +45,8 @@ export default function Social() {
 }
 
 function Accounts({ userId, accounts, onChanged }) {
+  const { can } = useSession();
+  const canConnect = can('social:connect');
   const [platform, setPlatform] = useState('twitter');
   const [handle, setHandle] = useState('');
   const [error, setError] = useState('');
@@ -60,22 +66,26 @@ function Accounts({ userId, accounts, onChanged }) {
   return (
     <section className="panel">
       <h2>Connected accounts</h2>
-      <form onSubmit={connect} className="row">
-        <label>
-          Platform
-          <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
-            <option value="twitter">Twitter/X</option>
-            <option value="linkedin">LinkedIn</option>
-            <option value="instagram">Instagram</option>
-            <option value="facebook">Facebook</option>
-          </select>
-        </label>
-        <label>
-          Handle
-          <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@brand" required />
-        </label>
-        <button type="submit" disabled={!handle.trim()}>Connect</button>
-      </form>
+      {canConnect ? (
+        <form onSubmit={connect} className="row">
+          <label>
+            Platform
+            <select value={platform} onChange={(e) => setPlatform(e.target.value)}>
+              <option value="twitter">Twitter/X</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+            </select>
+          </label>
+          <label>
+            Handle
+            <input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@brand" required />
+          </label>
+          <button type="submit" disabled={!handle.trim()}>Connect</button>
+        </form>
+      ) : (
+        <p className="hint">Your role can view accounts but not connect them.</p>
+      )}
       {error && <div className="error">{error}</div>}
       <div className="cards">
         {accounts.map((a) => (
@@ -85,7 +95,7 @@ function Accounts({ userId, accounts, onChanged }) {
               <span className="cid">{a.platform}</span>
             </div>
             <p className="body">{a.handle}</p>
-            {a.status === 'connected' && (
+            {a.status === 'connected' && canConnect && (
               <div className="card-actions">
                 <button className="ghost" onClick={() => api.disconnectAccount(userId, a.id).then(onChanged)}>
                   Disconnect
@@ -100,12 +110,14 @@ function Accounts({ userId, accounts, onChanged }) {
 }
 
 function Scheduler({ userId, accounts, content, onChanged }) {
+  const { can } = useSession();
   const [contentId, setContentId] = useState('');
   const [selected, setSelected] = useState([]);
   const [scheduledAt, setScheduledAt] = useState('');
   const [previews, setPreviews] = useState([]);
   const [error, setError] = useState('');
 
+  const canSchedule = can('social:schedule');
   const connected = accounts.filter((a) => a.status === 'connected');
   const chosenContent = content.find((c) => c.id === Number(contentId));
 
@@ -133,6 +145,15 @@ function Scheduler({ userId, accounts, content, onChanged }) {
     } catch (e) {
       setError(e.message);
     }
+  }
+
+  if (!canSchedule) {
+    return (
+      <section className="panel">
+        <h2>Schedule a multi-platform post</h2>
+        <p className="hint">Your role does not have permission to schedule posts.</p>
+      </section>
+    );
   }
 
   return (
@@ -191,11 +212,15 @@ function Scheduler({ userId, accounts, content, onChanged }) {
 }
 
 function Posts({ userId, posts, onChanged }) {
+  const { can } = useSession();
+  const canPublish = can('social:publish');
   return (
     <section className="panel">
       <div className="card-head">
         <h2>Posts</h2>
-        <button onClick={() => api.publishDue(userId).then(onChanged)}>Publish due (approved)</button>
+        {canPublish && (
+          <button onClick={() => api.publishDue(userId).then(onChanged)}>Publish due (approved)</button>
+        )}
       </div>
       {posts.length === 0 && <p className="hint">No posts yet.</p>}
       <div className="cards">
@@ -207,7 +232,7 @@ function Posts({ userId, posts, onChanged }) {
             </div>
             <p className="body">{p.post_text}</p>
             {p.scheduled_at && <p className="hint">Scheduled: {p.scheduled_at}</p>}
-            {p.status === 'approved' && (
+            {p.status === 'approved' && canPublish && (
               <div className="card-actions">
                 <button className="primary" onClick={() => api.publishPost(userId, p.id).then(onChanged)}>
                   Publish now

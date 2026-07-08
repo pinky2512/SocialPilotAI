@@ -81,6 +81,13 @@ button.ghost { background: transparent; }
 .status-rejected { background: rgba(255,107,122,0.15); color: var(--danger); }
 .status-published { background: rgba(108,123,255,0.18); color: var(--accent); }
 
+.perms-banner {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 13px; color: var(--muted);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.perms-banner strong { color: var(--accent-2); text-transform: capitalize; }
+
 .audit { width: 100%; border-collapse: collapse; font-size: 13px; }
 .audit th, .audit td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
 .audit th { color: var(--muted); font-weight: 600; }
