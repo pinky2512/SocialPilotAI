@@ -15,12 +15,15 @@ async function request(path, { method = 'GET', body, userId } = {}) {
 }
 
 export const api = {
+  // Content
   generateContent: (userId, payload) =>
     request('/api/content/generate', { method: 'POST', body: payload, userId }),
   editContent: (userId, id, contentText) =>
     request(`/api/content/${id}`, { method: 'PATCH', body: { contentText }, userId }),
   listContent: (userId, status) =>
     request(`/api/content${status ? `?status=${status}` : ''}`, { userId }),
+
+  // Approvals
   submitForApproval: (userId, contentId) =>
     request('/api/approvals/submit', { method: 'POST', body: { contentId }, userId }),
   pendingApprovals: (userId) => request('/api/approvals/pending', { userId }),
@@ -28,4 +31,21 @@ export const api = {
     request(`/api/approvals/${approvalId}/approve`, { method: 'POST', userId }),
   reject: (userId, approvalId, reason) =>
     request(`/api/approvals/${approvalId}/reject`, { method: 'POST', body: { reason }, userId }),
+
+  // Social
+  listAccounts: (userId) => request('/api/social/accounts', { userId }),
+  connectAccount: (userId, payload) =>
+    request('/api/social/accounts', { method: 'POST', body: payload, userId }),
+  disconnectAccount: (userId, id) =>
+    request(`/api/social/accounts/${id}`, { method: 'DELETE', userId }),
+  platforms: (userId) => request('/api/social/platforms', { userId }),
+  preview: (userId, text, platforms) =>
+    request('/api/social/preview', { method: 'POST', body: { text, platforms }, userId }),
+  schedulePost: (userId, payload) =>
+    request('/api/social/posts', { method: 'POST', body: payload, userId }),
+  listPosts: (userId, status) =>
+    request(`/api/social/posts${status ? `?status=${status}` : ''}`, { userId }),
+  publishPost: (userId, id) =>
+    request(`/api/social/posts/${id}/publish`, { method: 'POST', userId }),
+  publishDue: (userId) => request('/api/social/publish-due', { method: 'POST', userId }),
 };

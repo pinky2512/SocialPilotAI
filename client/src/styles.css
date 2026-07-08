@@ -81,6 +81,10 @@ button.ghost { background: transparent; }
 .status-rejected { background: rgba(255,107,122,0.15); color: var(--danger); }
 .status-published { background: rgba(108,123,255,0.18); color: var(--accent); }
 
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.chip { border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 .error {
   background: rgba(255,107,122,0.12); color: var(--danger);
   border: 1px solid rgba(255,107,122,0.3); border-radius: 8px;

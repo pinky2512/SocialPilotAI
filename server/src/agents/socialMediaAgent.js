@@ -157,6 +157,75 @@ export function listPosts({ status } = {}) {
     : all('SELECT * FROM social_posts ORDER BY id DESC');
 }
 
+/**
+ * STORY-007 — publish an approved post to its platform.
+ *
+ * Approval-gate enforcement: a post can ONLY publish from status 'approved'
+ * (i.e. it passed the human approval gate). Any other status is refused. The
+ * actual platform API call is simulated here — this is the swap-in point for a
+ * real integration (Twitter/LinkedIn/etc. SDK). Success/failure is recorded in
+ * integration_logs and the audit log.
+ *
+ * @returns {object} the published social_posts row.
+ */
+export function publishPost({ postId, userId = null }) {
+  const post = get('SELECT * FROM social_posts WHERE id = ?', [postId]);
+  if (!post) throw new Error(`post ${postId} not found`);
+  if (post.status !== 'approved') {
+    throw new Error(`post ${postId} is '${post.status}' — only approved posts can be published`);
+  }
+
+  const taskId = startTask({ agentId: AGENT_ID, taskType: 'publishPost' });
+  try {
+    // --- SWAP-IN POINT: real platform API call --------------------------------
+    // input:  { platform, handle, text, accessToken }
+    // output: { externalId }  (id of the created post on the platform)
+    const externalId = `${post.platform}-${postId}-${post.account_id}`;
+    // -------------------------------------------------------------------------
+
+    run(
+      "UPDATE social_posts SET status = 'published', published_at = datetime('now') WHERE id = ?",
+      [postId]
+    );
+    logIntegration(post.platform, 'publish', 'success', { postId, externalId, accountId: post.account_id });
+    logAction({
+      userId,
+      action: 'social.post_published',
+      details: { postId, platform: post.platform, accountId: post.account_id, externalId },
+    });
+    finishTask(taskId, 'done');
+    broker.publish('postPublished', { postId, platform: post.platform, externalId });
+    return get('SELECT * FROM social_posts WHERE id = ?', [postId]);
+  } catch (err) {
+    run("UPDATE social_posts SET status = 'failed' WHERE id = ?", [postId]);
+    logIntegration(post.platform, 'publish', 'failed', { postId, error: String(err?.message || err) });
+    finishTask(taskId, 'failed');
+    throw err;
+  }
+}
+
+/**
+ * Publish all approved posts that are due (scheduled_at <= now, or unscheduled).
+ * This is the "post to multiple platforms" batch a scheduler would call. Returns
+ * a per-post result so one platform failing never blocks the others.
+ */
+export function publishDuePosts({ userId = null, now = new Date().toISOString() } = {}) {
+  const due = all(
+    "SELECT * FROM social_posts WHERE status = 'approved' AND (scheduled_at IS NULL OR scheduled_at <= ?)",
+    [now]
+  );
+  const results = [];
+  for (const post of due) {
+    try {
+      const published = publishPost({ postId: post.id, userId });
+      results.push({ postId: post.id, platform: post.platform, status: 'published', published });
+    } catch (err) {
+      results.push({ postId: post.id, platform: post.platform, status: 'failed', error: err.message });
+    }
+  }
+  return results;
+}
+
 function logIntegration(integrationType, action, status, details) {
   const taskId = startTask({ agentId: AGENT_ID, taskType: `${action}Account` });
   run(
