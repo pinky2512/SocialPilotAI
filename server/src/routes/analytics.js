@@ -54,7 +54,13 @@ router.get('/email/metrics', requireUser, (_req, res) => {
 // GET /api/analytics/predict/:campaignId
 router.get('/predict/:campaignId', requireUser, (req, res) => {
   try {
-    res.json({ insights: generatePredictiveInsights({ campaignId: Number(req.params.campaignId) }) });
+    res.json({
+      insights: generatePredictiveInsights({
+        campaignId: Number(req.params.campaignId),
+        actorId: req.user.id,
+        audit: true, // STORY-023: explicit request is audited
+      }),
+    });
   } catch (err) {
     res.status(404).json({ error: err.message });
   }
@@ -89,7 +95,13 @@ router.get('/recommendations', requireUser, (_req, res) => {
 });
 router.get('/recommendations/:campaignId', requireUser, (req, res) => {
   try {
-    res.json({ recommendations: generateRecommendations({ campaignId: Number(req.params.campaignId) }) });
+    res.json({
+      recommendations: generateRecommendations({
+        campaignId: Number(req.params.campaignId),
+        actorId: req.user.id,
+        audit: true, // STORY-023: explicit request is audited
+      }),
+    });
   } catch (err) {
     res.status(404).json({ error: err.message });
   }

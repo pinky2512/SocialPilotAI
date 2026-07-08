@@ -9,6 +9,7 @@ import { run, get, all } from '../db/index.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
 import { createTTLCache } from '../util/cache.js';
+import { logAction } from '../trust/audit.js';
 
 const AGENT_ID = 'analytics-agent';
 
@@ -132,7 +133,7 @@ export function historicalBaseline() {
  * engagement so far with the historical baseline, weighted by delivered sample
  * size (more data → trust the observation more). Confidence scales with sample.
  */
-export function generatePredictiveInsights({ campaignId }) {
+export function generatePredictiveInsights({ campaignId, actorId = null, audit = false }) {
   const taskId = startTask({ agentId: AGENT_ID, taskType: 'generatePredictiveInsights' });
   try {
     const m = campaignMetrics(campaignId);
@@ -162,6 +163,15 @@ export function generatePredictiveInsights({ campaignId }) {
       confidence,
       trend,
     };
+    // STORY-023 — audit only EXPLICIT predictive requests (not dashboard polls),
+    // so the trail is meaningful without flooding the audit log.
+    if (audit) {
+      logAction({
+        userId: actorId,
+        action: 'analytics.predictive_generated',
+        details: { campaignId, predicted: insights.predicted, confidence, basedOnDelivered: delivered },
+      });
+    }
     finishTask(taskId, 'done');
     return insights;
   } catch (err) {
@@ -264,19 +274,31 @@ export function unifiedOverview() {
 // ML/LLM recommender; the { type, message, rationale, priority, metric } shape
 // is the contract callers depend on.
 
-export function generateRecommendations({ campaignId }) {
+export function generateRecommendations({ campaignId, actorId = null, audit = false }) {
   const m = campaignMetrics(campaignId);
   const baseline = historicalBaseline();
   const recs = [];
   const add = (type, priority, metric, message, rationale) =>
     recs.push({ type, priority, metric, message, rationale });
 
+  // STORY-023 — audit only EXPLICIT recommendation requests (not dashboard polls).
+  const done = () => {
+    if (audit) {
+      logAction({
+        userId: actorId,
+        action: 'analytics.recommendations_generated',
+        details: { campaignId, count: recs.length, types: recs.map((r) => r.type) },
+      });
+    }
+    return { campaignId, name: m.name, recommendations: recs };
+  };
+
   const delivered = m.counts.delivered;
   if (delivered < 50) {
     add('gather-data', 'low', 'delivered',
       'Gather more engagement data before optimizing.',
       `Only ${delivered} delivered — too small a sample for confident recommendations.`);
-    return { campaignId, name: m.name, recommendations: recs };
+    return done();
   }
 
   if (m.rates.openRate < baseline.openRate * 0.9) {
@@ -312,7 +334,7 @@ export function generateRecommendations({ campaignId }) {
       'Performance is on track — maintain current strategy.',
       'All rates are at or above baseline with healthy bounce/unsubscribe.');
   }
-  return { campaignId, name: m.name, recommendations: recs };
+  return done();
 }
 
 export function allRecommendations() {
