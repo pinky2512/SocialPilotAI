@@ -15,7 +15,8 @@ import {
   updateDashboard,
   generateRecommendations,
   allRecommendations,
-  unifiedOverview,
+  getOverviewCached,
+  getDashboardCached,
 } from '../agents/analyticsAgent.js';
 
 const router = Router();
@@ -66,13 +67,19 @@ router.get('/predict', requireUser, (_req, res) => {
 });
 
 // STORY-020 — unified cross-channel overview.  GET /api/analytics/overview
+// STORY-021 — served from a short-TTL cache (X-Cache header reports hit/miss).
 router.get('/overview', requireUser, (_req, res) => {
-  res.json({ overview: unifiedOverview() });
+  const { value, hit } = getOverviewCached();
+  res.set('X-Cache', hit ? 'HIT' : 'MISS');
+  res.json({ overview: value });
 });
 
 // STORY-018 — real-time metrics dashboard snapshot.  GET /api/analytics/dashboard
+// STORY-021 — cached for low latency; invalidated on new engagement.
 router.get('/dashboard', requireUser, (_req, res) => {
-  res.json({ dashboard: updateDashboard() });
+  const { value, hit } = getDashboardCached();
+  res.set('X-Cache', hit ? 'HIT' : 'MISS');
+  res.json({ dashboard: value });
 });
 
 // STORY-019 — optimization recommendations.

@@ -140,7 +140,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-019 Recommendations for Optimizing Future Campaigns — Analytics Agent generates prioritized, rationale-backed recommendations from metrics vs baseline (improve-subject, strengthen-CTA, clean-list, reduce-frequency, replicate, on-track); shown on the Dashboard. **Completes R4.**
 **R5 — Launch**
 - ✅ STORY-020 Unified Dashboard for Campaign Metrics — single cross-channel overview (content, social, email, engagement, leads, pending approvals) via `unifiedOverview`; shown as a Unified Overview panel on the Dashboard.
-- ⬜ STORY-021 Latency Optimization for Real-Time Dashboard
+- ✅ STORY-021 Latency Optimization for Real-Time Dashboard — short-TTL cache for dashboard/overview aggregates, invalidated on new engagement (stays real-time-correct); `X-Cache` and `X-Response-Time` headers for observability.
 - ⬜ STORY-022 Handling Large Datasets in Real-Time Dashboard
 - ⬜ STORY-023 Audit Logging for Predictive Analytics
 ### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035

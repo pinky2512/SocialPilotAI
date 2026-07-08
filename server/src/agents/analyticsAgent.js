@@ -8,6 +8,7 @@
 import { run, get, all } from '../db/index.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
+import { createTTLCache } from '../util/cache.js';
 
 const AGENT_ID = 'analytics-agent';
 
@@ -168,6 +169,34 @@ export function generatePredictiveInsights({ campaignId }) {
     throw err;
   }
 }
+
+// --- STORY-021: latency optimization --------------------------------------
+//
+// The dashboard is polled every few seconds; recomputing aggregates each time is
+// wasteful. Cache the snapshots for a short TTL and invalidate immediately when
+// new engagement arrives, so responses stay fast AND real-time-correct.
+
+const DASHBOARD_TTL_MS = 2000;
+const _dashboardCache = createTTLCache(DASHBOARD_TTL_MS);
+const _overviewCache = createTTLCache(DASHBOARD_TTL_MS);
+
+/** Cached dashboard snapshot. Returns { value, hit }. */
+export function getDashboardCached() {
+  return _dashboardCache.get(() => updateDashboard());
+}
+/** Cached unified overview. Returns { value, hit }. */
+export function getOverviewCached() {
+  return _overviewCache.get(() => unifiedOverview());
+}
+/** Invalidate analytics caches (called on new data). */
+export function invalidateAnalyticsCaches() {
+  _dashboardCache.invalidate();
+  _overviewCache.invalidate();
+}
+
+// Keep the cache honest: any fresh engagement invalidates it so the next poll
+// recomputes. This preserves real-time correctness while absorbing poll bursts.
+broker.subscribe('newCampaignData', () => invalidateAnalyticsCaches());
 
 /** Predictive insights for every campaign — dashboard forecast column. */
 export function allPredictiveInsights() {
