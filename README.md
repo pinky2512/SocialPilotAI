@@ -135,7 +135,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 
 **R4 — Polish**
 - ✅ STORY-016 Update Lead Scores in Real-Time — Lead Scoring Agent subscribes to `newCampaignData` on the broker and re-scores the affected lead immediately on each engagement event (enabled at server boot; opt-in so tests stay isolated).
-- ⬜ STORY-017 Predictive Analytics for Campaign Performance
+- ✅ STORY-017 Predictive Analytics for Campaign Performance — Analytics Agent forecasts final open/click rates by blending observed engagement with a historical baseline (weighted by sample size), with confidence tiers and projected totals; explicit ML swap-in point.
 - ⬜ STORY-018 Real-Time Metrics Dashboard
 - ⬜ STORY-019 Recommendations for Optimizing Future Campaigns
 **R5 — Launch** — ⬜ STORY-020…023

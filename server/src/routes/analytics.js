@@ -9,6 +9,10 @@ import {
   ingestEngagementBatch,
   campaignMetrics,
   allCampaignMetrics,
+  generatePredictiveInsights,
+  allPredictiveInsights,
+  historicalBaseline,
+  updateDashboard,
 } from '../agents/analyticsAgent.js';
 
 const router = Router();
@@ -40,6 +44,27 @@ router.get('/email/:campaignId/metrics', requireUser, (req, res) => {
 // Metrics for all campaigns (dashboard).  GET /api/analytics/email/metrics
 router.get('/email/metrics', requireUser, (_req, res) => {
   res.json({ metrics: allCampaignMetrics() });
+});
+
+// STORY-017 — predictive insights for one campaign.
+// GET /api/analytics/predict/:campaignId
+router.get('/predict/:campaignId', requireUser, (req, res) => {
+  try {
+    res.json({ insights: generatePredictiveInsights({ campaignId: Number(req.params.campaignId) }) });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// STORY-017 — predictive insights for all campaigns + baseline.
+// GET /api/analytics/predict
+router.get('/predict', requireUser, (_req, res) => {
+  res.json({ baseline: historicalBaseline(), insights: allPredictiveInsights() });
+});
+
+// STORY-018 — real-time metrics dashboard snapshot.  GET /api/analytics/dashboard
+router.get('/dashboard', requireUser, (_req, res) => {
+  res.json({ dashboard: updateDashboard() });
 });
 
 export default router;
