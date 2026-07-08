@@ -125,6 +125,15 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-010 Role-Based Access Control for Social Media Features — Security & Access Control Agent enforces a role→permission matrix on every social route (connect/schedule/publish/view); denied attempts return 403 and are recorded as `access.denied` in the audit log. UI gates buttons by permission (`/api/me`).
 - ✅ STORY-011 Create and Schedule Email Campaign — Email Campaign Agent creates drafts, schedules them (held at the approval gate), and sends **only approved** campaigns (gate enforced at send time); simulated ESP send with an explicit swap-in point; RBAC-gated + audited. **Completes R2 → Phase 1 sign-off gate.**
 
-### Phase 2 — Core + Reliability — ⬜ STORY-012…023
+### Phase 2 — Core + Reliability
+
+**R3 — Data & Export**
+- ✅ STORY-012 Track Email Engagement Metrics — Analytics Agent ingests engagement events (opens/clicks/bounces/etc.; ESP-webhook swap-in point) and computes per-campaign metrics (counts + open/click/bounce rates, unique vs total).
+- ⬜ STORY-013 Visualize Email Engagement Metrics
+- ⬜ STORY-014 Assign Lead Scores Based on Engagement Data
+- ⬜ STORY-015 Segment Audiences Based on Lead Scores
+
+**R4 — Polish** — ⬜ STORY-016…019
+**R5 — Launch** — ⬜ STORY-020…023
 ### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

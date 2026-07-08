@@ -140,3 +140,16 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   created_by   INTEGER REFERENCES users(id),
   created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+
+-- R3 (STORY-012) — email engagement events (opens/clicks/bounces/etc.).
+-- DEV NOTE: in production these arrive via ESP webhooks; the ingest endpoint is
+-- the swap-in point. This is telemetry (its own table), distinct from the
+-- governance audit_log.
+CREATE TABLE IF NOT EXISTS email_engagement_events (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL REFERENCES email_campaigns(id),
+  recipient   TEXT,                              -- recipient email / lead identifier
+  event_type  TEXT    NOT NULL,                  -- delivered | open | click | bounce | unsubscribe
+  occurred_at TEXT    NOT NULL DEFAULT (datetime('now')),
+  details     TEXT
+);
