@@ -11,6 +11,8 @@ import {
   listAccounts,
   schedulePost,
   listPosts,
+  previewForPlatforms,
+  platformCatalog,
 } from '../agents/socialMediaAgent.js';
 
 const router = Router();
@@ -39,6 +41,18 @@ router.delete('/accounts/:id', requireUser, (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// STORY-006 — platform catalog (limits/rules).  GET /api/social/platforms
+router.get('/platforms', requireUser, (_req, res) => {
+  res.json({ platforms: platformCatalog() });
+});
+
+// STORY-006 — preview per-platform adaptation.  POST /api/social/preview { text, platforms? }
+router.post('/preview', requireUser, (req, res) => {
+  const { text, platforms } = req.body || {};
+  if (!text) return res.status(400).json({ error: 'text is required' });
+  res.json({ previews: previewForPlatforms(text, platforms) });
 });
 
 // STORY-005 — schedule posts.  POST /api/social/posts { contentId, accountIds, scheduledAt? }

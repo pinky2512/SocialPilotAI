@@ -10,7 +10,7 @@ import { run, get, all } from '../db/index.js';
 import { logAction } from '../trust/audit.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
-import { SUPPORTED_PLATFORMS, adaptForPlatform } from './platformRules.js';
+import { SUPPORTED_PLATFORMS, PLATFORM_RULES, adaptForPlatform, validateForPlatform, rulesFor } from './platformRules.js';
 import { holdForApproval } from '../trust/approvals.js';
 
 const AGENT_ID = 'social-media-posting-agent';
@@ -125,6 +125,30 @@ export function schedulePost({ userId, contentId, accountIds, scheduledAt = null
     finishTask(taskId, 'failed');
     throw err;
   }
+}
+
+/**
+ * STORY-006 — preview how a draft adapts to each platform's nuances, with any
+ * residual validation issues, so a human can review before scheduling.
+ * @param {string} text
+ * @param {string[]} [platforms] defaults to all supported platforms
+ */
+export function previewForPlatforms(text, platforms = SUPPORTED_PLATFORMS) {
+  return platforms.map((platform) => {
+    const rules = rulesFor(platform);
+    const adapted = adaptForPlatform(text, platform);
+    return {
+      platform,
+      note: rules?.note,
+      original: String(text),
+      adapted,
+      validation: validateForPlatform(adapted, platform),
+    };
+  });
+}
+
+export function platformCatalog() {
+  return SUPPORTED_PLATFORMS.map((platform) => ({ platform, ...PLATFORM_RULES[platform] }));
 }
 
 export function listPosts({ status } = {}) {
