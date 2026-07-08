@@ -72,6 +72,10 @@ server/                     Node.js + Express backend
     routes/                 Express routers
     app.js / server.js      App wiring + entrypoint
   test/                     node:test suites, one file per story
+client/                     React frontend (Vite)
+  src/
+    pages/                  Content Studio, Approval Queue
+    api.js / session.jsx    API client + acting-user session
 ```
 
 ### Running locally
@@ -82,6 +86,12 @@ npm install
 npm run seed     # creates 5 role users (password: password123) + a sample campaign
 npm start        # http://localhost:4000
 npm test         # runs the per-story acceptance tests
+```
+
+```bash
+cd client
+npm install
+npm run dev      # http://localhost:5173 (proxies /api to the backend on :4000)
 ```
 
 > **Dev database:** the app uses Node's built-in `node:sqlite` (file-backed, no
@@ -102,7 +112,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 **R0 — Walking Skeleton**
 - ✅ STORY-001 AI-Driven Content Draft Generation — Content Generation Agent produces a draft (status `draft`, never auto-published), writes an append-only audit entry, and tracks the run in `ai_agent_tasks`.
 - ✅ STORY-002 Content Draft Approval Workflow — Governance Agent submits drafts into the approval gate and records human approve/reject decisions; content can only reach `approved` through `approval_processes`, and every transition is audited.
-- ⬜ STORY-003 Seamless Content Editing Interface
+- ✅ STORY-003 Seamless Content Editing Interface — React Content Studio to generate, inline-edit, and submit drafts, plus an Approval Queue view; editing records before/after in the audit log and an edited-after-submit draft returns to `draft` (re-approval required).
 
 **R1 — Core Build** — ⬜ STORY-004…007
 **R2 — Reliability & Trust** — ⬜ STORY-008…011

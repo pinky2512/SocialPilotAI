@@ -4,7 +4,7 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { generateContent } from '../agents/contentGenerationAgent.js';
+import { generateContent, editContent } from '../agents/contentGenerationAgent.js';
 import { all, get } from '../db/index.js';
 
 const router = Router();
@@ -25,6 +25,22 @@ router.post('/generate', requireUser, (req, res) => {
       tone,
     });
     res.status(201).json({ content });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// STORY-003 — edit a draft's text (before/after audited).
+// PATCH /api/content/:id  { contentText }
+router.patch('/:id', requireUser, (req, res) => {
+  const { contentText } = req.body || {};
+  try {
+    const content = editContent({
+      contentId: Number(req.params.id),
+      editorId: req.user.id,
+      contentText,
+    });
+    res.json({ content });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

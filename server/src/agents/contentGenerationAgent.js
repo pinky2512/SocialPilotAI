@@ -57,6 +57,49 @@ export function generateContent({ creatorId, campaignId = null, prompt, platform
 }
 
 /**
+ * editContent — human edits a draft's text. Editing is only allowed while the
+ * content is not yet live (draft / rejected / pending_approval). Editing an
+ * item that was already submitted resets it to 'draft' so it must pass the
+ * approval gate again (an edited draft is a new proposal). Records the
+ * before/after in the append-only audit log.
+ *
+ * @param {object} p
+ * @param {number} p.contentId
+ * @param {number} p.editorId
+ * @param {string} p.contentText  the new body
+ * @returns {object} updated content row.
+ */
+export function editContent({ contentId, editorId, contentText }) {
+  if (contentText == null || !String(contentText).trim()) {
+    throw new Error('editContent requires non-empty contentText');
+  }
+  const content = get('SELECT * FROM content WHERE id = ?', [contentId]);
+  if (!content) throw new Error(`content ${contentId} not found`);
+
+  const editable = ['draft', 'rejected', 'pending_approval'];
+  if (!editable.includes(content.status)) {
+    throw new Error(`content ${contentId} is '${content.status}' and can no longer be edited`);
+  }
+
+  const before = content.content_text;
+  // A re-edited, already-submitted draft returns to 'draft': it must be
+  // re-approved. This keeps the approval-gate contract intact.
+  const nextStatus = content.status === 'pending_approval' ? 'draft' : content.status;
+  run(
+    'UPDATE content SET content_text = ?, status = ? WHERE id = ?',
+    [contentText, nextStatus, contentId]
+  );
+
+  logAction({
+    userId: editorId,
+    action: 'content.edited',
+    details: { contentId, before, after: contentText, statusFrom: content.status, statusTo: nextStatus },
+  });
+  broker.publish('contentEdited', { contentId, editorId });
+  return get('SELECT * FROM content WHERE id = ?', [contentId]);
+}
+
+/**
  * PLACEHOLDER content generator (template-based). SWAP-IN POINT for a real LLM.
  *
  * Intended real-model contract (drop-in replacement for this function):
