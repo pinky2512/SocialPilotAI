@@ -4,6 +4,7 @@
 import express from 'express';
 import { attachCurrentUser } from './http/currentUser.js';
 import contentRoutes from './routes/content.js';
+import approvalRoutes from './routes/approvals.js';
 
 export function createApp() {
   const app = express();
@@ -15,6 +16,7 @@ export function createApp() {
   });
 
   app.use('/api/content', contentRoutes);
+  app.use('/api/approvals', approvalRoutes);
 
   return app;
 }

@@ -101,7 +101,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 
 **R0 — Walking Skeleton**
 - ✅ STORY-001 AI-Driven Content Draft Generation — Content Generation Agent produces a draft (status `draft`, never auto-published), writes an append-only audit entry, and tracks the run in `ai_agent_tasks`.
-- ⬜ STORY-002 Content Draft Approval Workflow
+- ✅ STORY-002 Content Draft Approval Workflow — Governance Agent submits drafts into the approval gate and records human approve/reject decisions; content can only reach `approved` through `approval_processes`, and every transition is audited.
 - ⬜ STORY-003 Seamless Content Editing Interface
 
 **R1 — Core Build** — ⬜ STORY-004…007
