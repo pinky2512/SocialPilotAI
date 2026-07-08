@@ -164,3 +164,15 @@ CREATE TABLE IF NOT EXISTS email_engagement_events (
   occurred_at TEXT    NOT NULL DEFAULT (datetime('now')),
   details     TEXT
 );
+
+-- R5 (STORY-022) — indexes to keep aggregates/queries fast on large datasets.
+CREATE INDEX IF NOT EXISTS idx_engagement_campaign ON email_engagement_events (campaign_id);
+CREATE INDEX IF NOT EXISTS idx_engagement_recipient ON email_engagement_events (recipient);
+CREATE INDEX IF NOT EXISTS idx_engagement_campaign_type ON email_engagement_events (campaign_id, event_type);
+CREATE INDEX IF NOT EXISTS idx_leads_score ON leads (score);
+CREATE INDEX IF NOT EXISTS idx_leads_segment ON leads (segment);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log (action);
+CREATE INDEX IF NOT EXISTS idx_content_status ON content (status);
+CREATE INDEX IF NOT EXISTS idx_posts_status ON social_posts (status);
+CREATE INDEX IF NOT EXISTS idx_campaigns_status ON email_campaigns (status);
+CREATE INDEX IF NOT EXISTS idx_approvals_status ON approval_processes (status);

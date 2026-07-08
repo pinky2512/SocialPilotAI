@@ -141,7 +141,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 **R5 — Launch**
 - ✅ STORY-020 Unified Dashboard for Campaign Metrics — single cross-channel overview (content, social, email, engagement, leads, pending approvals) via `unifiedOverview`; shown as a Unified Overview panel on the Dashboard.
 - ✅ STORY-021 Latency Optimization for Real-Time Dashboard — short-TTL cache for dashboard/overview aggregates, invalidated on new engagement (stays real-time-correct); `X-Cache` and `X-Response-Time` headers for observability.
-- ⬜ STORY-022 Handling Large Datasets in Real-Time Dashboard
+- ✅ STORY-022 Handling Large Datasets in Real-Time Dashboard — DB indexes on hot columns, DB-side aggregation (GROUP BY, not in-memory), and limit/offset pagination with totals on leads + audit endpoints; verified correct over multi-thousand-row event sets.
 - ⬜ STORY-023 Audit Logging for Predictive Analytics
 ### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

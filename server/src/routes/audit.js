@@ -6,20 +6,26 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { queryAudit, auditActionTypes, actionsForPost, actionsForContent } from '../trust/audit.js';
+import { queryAudit, countAudit, auditActionTypes, actionsForPost, actionsForContent } from '../trust/audit.js';
 
 const router = Router();
 
-// GET /api/audit?action=...&prefix=social.&userId=...&limit=...
+// GET /api/audit?action=...&prefix=social.&userId=...&limit=...&offset=...
+// STORY-022 — paginated with a total count.
 router.get('/', requireUser, (req, res) => {
-  const { action, prefix, userId, limit } = req.query;
+  const { action, prefix, userId, limit, offset } = req.query;
+  const filters = {
+    action,
+    actionPrefix: prefix,
+    userId: userId != null ? Number(userId) : undefined,
+  };
+  const lim = limit ? Number(limit) : 100;
+  const off = offset ? Number(offset) : 0;
   res.json({
-    entries: queryAudit({
-      action,
-      actionPrefix: prefix,
-      userId: userId != null ? Number(userId) : undefined,
-      limit: limit ? Number(limit) : 100,
-    }),
+    entries: queryAudit({ ...filters, limit: lim, offset: off }),
+    total: countAudit(filters),
+    limit: lim,
+    offset: off,
   });
 });
 

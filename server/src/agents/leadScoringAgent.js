@@ -128,8 +128,16 @@ export function leadsInSegment(segment) {
   return all('SELECT * FROM leads WHERE segment = ? ORDER BY score DESC', [segment]);
 }
 
-export function listLeads({ orderByScore = true } = {}) {
-  return all(`SELECT * FROM leads ORDER BY ${orderByScore ? 'score DESC, id ASC' : 'id ASC'}`);
+// STORY-022 — paginated listing for large audiences. limit/offset applied in
+// SQL so we never load the whole table into memory.
+export function listLeads({ orderByScore = true, limit = null, offset = 0 } = {}) {
+  const order = orderByScore ? 'score DESC, id ASC' : 'id ASC';
+  if (limit == null) return all(`SELECT * FROM leads ORDER BY ${order}`);
+  return all(`SELECT * FROM leads ORDER BY ${order} LIMIT ? OFFSET ?`, [limit, offset]);
+}
+
+export function countLeads() {
+  return all('SELECT COUNT(*) AS n FROM leads')[0].n;
 }
 
 export function getLead(email) {

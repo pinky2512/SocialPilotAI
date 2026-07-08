@@ -10,6 +10,7 @@ import {
   scoreAllLeads,
   listLeads,
   getLead,
+  countLeads,
   segmentAudience,
   leadsInSegment,
   SEGMENTS,
@@ -47,9 +48,13 @@ router.get('/segment/:name', requireUser, (req, res) => {
   res.json({ leads: leadsInSegment(req.params.name) });
 });
 
-// List leads (highest score first).  GET /api/leads
-router.get('/', requireUser, (_req, res) => {
-  res.json({ leads: listLeads() });
+// List leads (highest score first), paginated.  GET /api/leads?limit=&offset=
+// STORY-022 — pagination keeps large audiences fast.
+router.get('/', requireUser, (req, res) => {
+  const limit = req.query.limit ? Math.min(Number(req.query.limit), 500) : null;
+  const offset = req.query.offset ? Number(req.query.offset) : 0;
+  const leads = listLeads({ limit, offset });
+  res.json({ leads, total: countLeads(), limit, offset });
 });
 
 // One lead by email.  GET /api/leads/:email

@@ -55,15 +55,26 @@ export function actionsForPost(postId) {
  * and compliance review. `actionPrefix` matches e.g. 'social.' for all social
  * actions.
  */
-export function queryAudit({ action, actionPrefix, userId, limit = 100 } = {}) {
+export function queryAudit({ action, actionPrefix, userId, limit = 100, offset = 0 } = {}) {
   const where = [];
   const params = [];
   if (action) { where.push('action = ?'); params.push(action); }
   if (actionPrefix) { where.push('action LIKE ?'); params.push(`${actionPrefix}%`); }
   if (userId != null) { where.push('user_id = ?'); params.push(userId); }
   const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  params.push(limit);
-  return all(`SELECT * FROM audit_log ${clause} ORDER BY id DESC LIMIT ?`, params).map(parseDetails);
+  params.push(limit, offset);
+  return all(`SELECT * FROM audit_log ${clause} ORDER BY id DESC LIMIT ? OFFSET ?`, params).map(parseDetails);
+}
+
+/** Count audit rows matching the same filters (for pagination totals). */
+export function countAudit({ action, actionPrefix, userId } = {}) {
+  const where = [];
+  const params = [];
+  if (action) { where.push('action = ?'); params.push(action); }
+  if (actionPrefix) { where.push('action LIKE ?'); params.push(`${actionPrefix}%`); }
+  if (userId != null) { where.push('user_id = ?'); params.push(userId); }
+  const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  return all(`SELECT COUNT(*) AS n FROM audit_log ${clause}`, params)[0].n;
 }
 
 /** Distinct action keys seen in the log (for filter menus). */
