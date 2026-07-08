@@ -141,6 +141,17 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+-- R3 (STORY-014) — leads and their engagement-derived score (0–100).
+CREATE TABLE IF NOT EXISTS leads (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  email      TEXT    NOT NULL UNIQUE,
+  name       TEXT,
+  score      INTEGER NOT NULL DEFAULT 0,   -- 0–100, derived from engagement
+  segment    TEXT,                          -- set by segmentation (STORY-015)
+  created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 -- R3 (STORY-012) — email engagement events (opens/clicks/bounces/etc.).
 -- DEV NOTE: in production these arrive via ESP webhooks; the ingest endpoint is
 -- the swap-in point. This is telemetry (its own table), distinct from the
