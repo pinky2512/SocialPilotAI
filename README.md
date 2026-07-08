@@ -116,7 +116,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 
 **R1 — Core Build**
 - ✅ STORY-004 Connect Social Media Accounts — Social Media Posting Agent connects/lists/disconnects accounts across supported platforms; every attempt logged to `integration_logs` + audit log (explicit OAuth swap-in point).
-- ⬜ STORY-005 Schedule Multi-Platform Posts
+- ✅ STORY-005 Schedule Multi-Platform Posts — `schedulePost` creates one post per target account (text adapted per platform) and holds each at the post-approval gate; nothing publishes without human sign-off. The approval gate is now generic (content + posts).
 - ⬜ STORY-006 Handle Platform-Specific Nuances
 - ⬜ STORY-007 Post to Multiple Platforms
 **R2 — Reliability & Trust** — ⬜ STORY-008…011

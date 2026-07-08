@@ -49,10 +49,12 @@ export function decide({ approvalId, approverId, decision, reason = '' }) {
       ? approve({ approvalId, approverId })
       : reject({ approvalId, approverId, reason });
     finishTask(taskId, 'done');
-    // React/announce so the owning agent (e.g. content publishing) can proceed.
+    // React/announce so the owning agent (e.g. content/post publishing) can proceed.
     broker.publish('approvalDecision', {
       approvalId,
-      contentId: result.content.id,
+      kind: result.kind,
+      targetId: result.target.id,
+      contentId: result.kind === 'content' ? result.target.id : undefined,
       decision,
       approverId,
     });

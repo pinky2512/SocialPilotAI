@@ -45,9 +45,11 @@ export default function ApprovalQueue() {
             <div className="card" key={p.approval_id}>
               <div className="card-head">
                 <span className="status status-pending_approval">pending approval</span>
-                <span className="cid">content #{p.content_id}</span>
+                <span className="cid">
+                  {p.kind}{p.platform ? ` · ${p.platform}` : ''} #{p.content_id ?? p.post_id}
+                </span>
               </div>
-              <p className="body">{p.content_text}</p>
+              <p className="body">{p.preview}</p>
               <div className="card-actions">
                 <button className="primary" onClick={() => act('approve', p.approval_id)}>Approve</button>
                 <button className="danger" onClick={() => act('reject', p.approval_id)}>Reject</button>

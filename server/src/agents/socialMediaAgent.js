@@ -10,7 +10,8 @@ import { run, get, all } from '../db/index.js';
 import { logAction } from '../trust/audit.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
-import { SUPPORTED_PLATFORMS } from './platformRules.js';
+import { SUPPORTED_PLATFORMS, adaptForPlatform } from './platformRules.js';
+import { holdForApproval } from '../trust/approvals.js';
 
 const AGENT_ID = 'social-media-posting-agent';
 
@@ -68,6 +69,68 @@ export function disconnectAccount({ userId, accountId }) {
 
 export function listAccounts(userId) {
   return all('SELECT * FROM social_accounts WHERE user_id = ? ORDER BY id DESC', [userId]);
+}
+
+/**
+ * STORY-005 — schedule a post to one or more connected accounts.
+ *
+ * Creates one social_posts row per target account (text adapted to each
+ * platform), then HOLDS each post at the approval gate. Nothing publishes here
+ * — a human must approve, then STORY-007 publishPost runs. Only 'connected'
+ * accounts may be targeted.
+ *
+ * @param {object} p
+ * @param {number}   p.userId
+ * @param {number}   p.contentId    approved content being posted
+ * @param {number[]} p.accountIds   target connected accounts
+ * @param {string}   [p.scheduledAt] ISO datetime to publish
+ * @returns {object[]} the created (held) social_posts rows.
+ */
+export function schedulePost({ userId, contentId, accountIds, scheduledAt = null }) {
+  const content = get('SELECT * FROM content WHERE id = ?', [contentId]);
+  if (!content) throw new Error(`content ${contentId} not found`);
+  if (!Array.isArray(accountIds) || accountIds.length === 0) {
+    throw new Error('at least one target accountId is required');
+  }
+
+  const taskId = startTask({ agentId: AGENT_ID, taskType: 'schedulePost' });
+  try {
+    const created = [];
+    for (const accountId of accountIds) {
+      const account = get('SELECT * FROM social_accounts WHERE id = ?', [accountId]);
+      if (!account) throw new Error(`account ${accountId} not found`);
+      if (account.status !== 'connected') {
+        throw new Error(`account ${accountId} (${account.platform}) is not connected`);
+      }
+      const postText = adaptForPlatform(content.content_text, account.platform);
+      const info = run(
+        `INSERT INTO social_posts (content_id, account_id, platform, post_text, scheduled_at, status, created_by)
+         VALUES (?, ?, ?, ?, ?, 'draft', ?)`,
+        [contentId, accountId, account.platform, postText, scheduledAt, userId]
+      );
+      const postId = info.lastInsertRowid;
+      logAction({
+        userId,
+        action: 'social.post_scheduled',
+        details: { postId, contentId, accountId, platform: account.platform, scheduledAt },
+      });
+      // Approval-gate contract: hold the post for human approval before publish.
+      holdForApproval({ kind: 'post', targetId: postId, requestedBy: userId });
+      broker.publish('postApproval', { postId, event: 'submitted' });
+      created.push(get('SELECT * FROM social_posts WHERE id = ?', [postId]));
+    }
+    finishTask(taskId, 'done');
+    return created;
+  } catch (err) {
+    finishTask(taskId, 'failed');
+    throw err;
+  }
+}
+
+export function listPosts({ status } = {}) {
+  return status
+    ? all('SELECT * FROM social_posts WHERE status = ? ORDER BY id DESC', [status])
+    : all('SELECT * FROM social_posts ORDER BY id DESC');
 }
 
 function logIntegration(integrationType, action, status, details) {
