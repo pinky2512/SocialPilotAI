@@ -1,0 +1,19 @@
+{
+  "name": "social-pilot-ai-server",
+  "version": "0.1.0",
+  "description": "Social Pilot AI — backend (Node.js + Express). AI marketing automation with Trust Before Intelligence governance.",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/db/seed.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

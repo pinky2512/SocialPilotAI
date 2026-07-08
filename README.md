@@ -59,3 +59,54 @@ observes every command across the system.
 | Trust and Governance Coordinator | Cross-agent monitoring | Monitors all trust metrics |
 
 ## Repo structure
+
+```
+server/                     Node.js + Express backend
+  src/
+    db/                     node:sqlite data layer, schema, seed
+    trust/                  Trust-Before-Intelligence controls (audit, approvals)
+    broker/                 Message-broker abstraction (swap for RabbitMQ/Kafka)
+    agents/                 One module per agent in the multi-agent map
+    auth/                   Roles + password hashing
+    http/                   Request middleware (current user)
+    routes/                 Express routers
+    app.js / server.js      App wiring + entrypoint
+  test/                     node:test suites, one file per story
+```
+
+### Running locally
+
+```bash
+cd server
+npm install
+npm run seed     # creates 5 role users (password: password123) + a sample campaign
+npm start        # http://localhost:4000
+npm test         # runs the per-story acceptance tests
+```
+
+> **Dev database:** the app uses Node's built-in `node:sqlite` (file-backed, no
+> external service) so it runs and is testable with zero setup. The schema
+> mirrors the intended PostgreSQL schema 1:1; `server/src/db/index.js` is the
+> single seam to swap to `pg` for production.
+>
+> **Message broker:** `server/src/broker/index.js` is an in-process pub/sub bus
+> exposing the minimal `publish`/`subscribe` surface RabbitMQ/Kafka also
+> provide, so agent code is unaffected by a future swap to a real broker.
+
+## Progress log
+
+Legend: ✅ Done · 🚧 In progress · ⬜ Not started
+
+### Phase 1 — Foundation
+
+**R0 — Walking Skeleton**
+- ✅ STORY-001 AI-Driven Content Draft Generation — Content Generation Agent produces a draft (status `draft`, never auto-published), writes an append-only audit entry, and tracks the run in `ai_agent_tasks`.
+- ⬜ STORY-002 Content Draft Approval Workflow
+- ⬜ STORY-003 Seamless Content Editing Interface
+
+**R1 — Core Build** — ⬜ STORY-004…007
+**R2 — Reliability & Trust** — ⬜ STORY-008…011
+
+### Phase 2 — Core + Reliability — ⬜ STORY-012…023
+### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035
+### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

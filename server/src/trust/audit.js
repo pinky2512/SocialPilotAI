@@ -1,0 +1,51 @@
+// Trust control #1 — Audit log.
+//
+// Append-only record of every meaningful action (who / what / when /
+// before-after). This is the ONLY sanctioned way to write to audit_log, and it
+// only ever INSERTs. The audit_log table additionally blocks UPDATE/DELETE at
+// the DB level (see schema.sql triggers) so this invariant cannot be bypassed.
+
+import { run, all, get } from '../db/index.js';
+
+/**
+ * Record an action in the append-only audit log.
+ *
+ * @param {object} entry
+ * @param {number|null} entry.userId  Human actor id, or null for agent/system actions.
+ * @param {string}      entry.action  Stable action key, e.g. 'content.generated'.
+ * @param {object}      [entry.details] Arbitrary context (before/after, ids, actor).
+ * @returns {object} the inserted row.
+ */
+export function logAction({ userId = null, action, details = {} }) {
+  if (!action) throw new Error('audit.logAction requires an action');
+  const detailsJson = JSON.stringify(details ?? {});
+  const info = run(
+    'INSERT INTO audit_log (user_id, action, details) VALUES (?, ?, ?)',
+    [userId, action, detailsJson]
+  );
+  return get('SELECT * FROM audit_log WHERE id = ?', [info.lastInsertRowid]);
+}
+
+/** Recent audit entries, newest first. Used by the trust dashboard. */
+export function recentActions(limit = 50) {
+  return all(
+    'SELECT * FROM audit_log ORDER BY id DESC LIMIT ?',
+    [limit]
+  ).map(parseDetails);
+}
+
+/** Full audit trail for a single content item. */
+export function actionsForContent(contentId) {
+  return all(
+    "SELECT * FROM audit_log WHERE json_extract(details, '$.contentId') = ? ORDER BY id ASC",
+    [contentId]
+  ).map(parseDetails);
+}
+
+function parseDetails(row) {
+  try {
+    return { ...row, details: JSON.parse(row.details ?? '{}') };
+  } catch {
+    return row;
+  }
+}
