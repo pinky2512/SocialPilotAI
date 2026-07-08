@@ -121,7 +121,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-007 Post to Multiple Platforms — `publishPost`/`publishDuePosts` publish only APPROVED posts (gate enforced at publish time), simulate the platform API (swap-in point), and log success/failure to `integration_logs` + audit log. Social page added to the UI.
 **R2 — Reliability & Trust**
 - ✅ STORY-008 Approval Workflow for Social Media Posts — Governance-owned post-approval workflow: submit/re-submit, revise rejected posts, approve/reject; a post never publishes without approval. `docs/trust-before-intelligence.md` added.
-- ⬜ STORY-009 Audit Log for Social Media Actions
+- ✅ STORY-009 Audit Log for Social Media Actions — queryable, read-only audit trail (filter by action/prefix/user; per-post & per-content trails). Every social action is recorded append-only; log remains immutable.
 - ⬜ STORY-010 Role-Based Access Control for Social Media Features
 - ⬜ STORY-011 Create and Schedule Email Campaign
 

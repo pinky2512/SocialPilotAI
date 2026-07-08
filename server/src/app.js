@@ -6,6 +6,7 @@ import { attachCurrentUser } from './http/currentUser.js';
 import contentRoutes from './routes/content.js';
 import approvalRoutes from './routes/approvals.js';
 import socialRoutes from './routes/social.js';
+import auditRoutes from './routes/audit.js';
 
 export function createApp() {
   const app = express();
@@ -19,6 +20,7 @@ export function createApp() {
   app.use('/api/content', contentRoutes);
   app.use('/api/approvals', approvalRoutes);
   app.use('/api/social', socialRoutes);
+  app.use('/api/audit', auditRoutes);
 
   return app;
 }

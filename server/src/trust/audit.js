@@ -42,6 +42,35 @@ export function actionsForContent(contentId) {
   ).map(parseDetails);
 }
 
+/** Full audit trail for a single social post. */
+export function actionsForPost(postId) {
+  return all(
+    "SELECT * FROM audit_log WHERE json_extract(details, '$.postId') = ? ORDER BY id ASC",
+    [postId]
+  ).map(parseDetails);
+}
+
+/**
+ * Query the audit log with optional filters. Read-only; supports the audit UI
+ * and compliance review. `actionPrefix` matches e.g. 'social.' for all social
+ * actions.
+ */
+export function queryAudit({ action, actionPrefix, userId, limit = 100 } = {}) {
+  const where = [];
+  const params = [];
+  if (action) { where.push('action = ?'); params.push(action); }
+  if (actionPrefix) { where.push('action LIKE ?'); params.push(`${actionPrefix}%`); }
+  if (userId != null) { where.push('user_id = ?'); params.push(userId); }
+  const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  params.push(limit);
+  return all(`SELECT * FROM audit_log ${clause} ORDER BY id DESC LIMIT ?`, params).map(parseDetails);
+}
+
+/** Distinct action keys seen in the log (for filter menus). */
+export function auditActionTypes() {
+  return all('SELECT DISTINCT action FROM audit_log ORDER BY action ASC').map((r) => r.action);
+}
+
 function parseDetails(row) {
   try {
     return { ...row, details: JSON.parse(row.details ?? '{}') };
