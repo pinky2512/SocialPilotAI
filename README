@@ -59,30 +59,3 @@ observes every command across the system.
 | Trust and Governance Coordinator | Cross-agent monitoring | Monitors all trust metrics |
 
 ## Repo structure
-
-```
-social-pilot-ai/
-  backend/     # Node.js + Express API, PostgreSQL, AI agent logic
-  frontend/    # React app — dashboard, content approval UI (added in later stories)
-  docs/        # Architecture and governance reference docs (added as needed)
-```
-
-## Getting started
-
-Each subfolder has its own setup instructions once it exists — see
-`backend/README.md` for the API once STORY-001 lands.
-
-## How work is tracked
-
-Work is broken into numbered stories (STORY-001 - STORY-044) grouped into
-11 releases (R0 - R10), grouped into 4 sign-off phases, tracked in
-Basecamp. Each story is delivered as its own commit(s) here, so the git
-history doubles as a build log.
-
-## Progress log
-
-_(updated after each story is completed)_
-
-| Story | Description | Agent | Status |
-|---|---|---|---|
-| STORY-001 | AI-Driven Content Draft Generation | Content Generation Agent | Not started |
