@@ -39,5 +39,17 @@ export function createApp() {
   app.use('/api/social', socialRoutes);
   app.use('/api/audit', auditRoutes);
 
+  // JSON 404 for unknown API routes (instead of HTML "Cannot GET").
+  app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
+
+  // Global error handler: log the real cause to the terminal and return a JSON
+  // message so failures are diagnosable instead of an opaque 500.
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, _req, res, _next) => {
+    // eslint-disable-next-line no-console
+    console.error('[api error]', err);
+    res.status(err.status || 500).json({ error: err.message || 'internal server error' });
+  });
+
   return app;
 }
