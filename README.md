@@ -133,7 +133,11 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-014 Assign Lead Scores Based on Engagement Data — Lead Scoring Agent derives a 0–100 score from weighted engagement (open/click/bounce/unsubscribe), clamped, upserted per lead, and audited (before/after). Explicit swap-in point for an ML model.
 - ✅ STORY-015 Segment Audiences Based on Lead Scores — `segmentAudience` buckets leads into hot/warm/cold/dormant by score band, returns per-segment counts, and audits the summary; leads can be listed per segment for targeting. Audience UI added. **Completes R3.**
 
-**R4 — Polish** — ⬜ STORY-016…019
+**R4 — Polish**
+- ✅ STORY-016 Update Lead Scores in Real-Time — Lead Scoring Agent subscribes to `newCampaignData` on the broker and re-scores the affected lead immediately on each engagement event (enabled at server boot; opt-in so tests stay isolated).
+- ⬜ STORY-017 Predictive Analytics for Campaign Performance
+- ⬜ STORY-018 Real-Time Metrics Dashboard
+- ⬜ STORY-019 Recommendations for Optimizing Future Campaigns
 **R5 — Launch** — ⬜ STORY-020…023
 ### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

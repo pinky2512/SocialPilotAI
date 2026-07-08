@@ -8,6 +8,7 @@
 import { run, get, all } from '../db/index.js';
 import { logAction } from '../trust/audit.js';
 import { startTask, finishTask } from './taskTracker.js';
+import { broker } from '../broker/index.js';
 
 const AGENT_ID = 'lead-scoring-agent';
 
@@ -133,4 +134,28 @@ export function listLeads({ orderByScore = true } = {}) {
 
 export function getLead(email) {
   return get('SELECT * FROM leads WHERE email = ?', [email]);
+}
+
+// --- STORY-016: real-time scoring -----------------------------------------
+//
+// When the Analytics Agent publishes 'newCampaignData' (a fresh engagement
+// event), re-score the affected lead immediately. Wired explicitly at server
+// boot (not on import) so it is opt-in and doesn't perturb unit tests.
+
+let _unsubscribe = null;
+
+/** Enable reactive re-scoring on new engagement. Idempotent. */
+export function enableRealtimeScoring() {
+  if (_unsubscribe) return _unsubscribe;
+  _unsubscribe = broker.subscribe('newCampaignData', ({ recipient }) => {
+    if (!recipient) return;
+    const lead = scoreLead({ email: recipient });
+    broker.publish('leadScoreUpdated', { leadId: lead.id, email: recipient, score: lead.score });
+  });
+  return _unsubscribe;
+}
+
+/** Disable reactive re-scoring (test cleanup). */
+export function disableRealtimeScoring() {
+  if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
 }
