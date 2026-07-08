@@ -5,6 +5,7 @@ import ApprovalQueue from './pages/ApprovalQueue.jsx';
 import Social from './pages/Social.jsx';
 import Email from './pages/Email.jsx';
 import Analytics from './pages/Analytics.jsx';
+import Audience from './pages/Audience.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
           <NavLink to="/social">Social</NavLink>
           <NavLink to="/email">Email</NavLink>
           <NavLink to="/analytics">Analytics</NavLink>
+          <NavLink to="/audience">Audience</NavLink>
           <NavLink to="/approvals">Approval Queue</NavLink>
           <NavLink to="/audit">Audit Log</NavLink>
         </nav>
@@ -43,6 +45,7 @@ export default function App() {
           <Route path="/social" element={<Social />} />
           <Route path="/email" element={<Email />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/audience" element={<Audience />} />
           <Route path="/approvals" element={<ApprovalQueue />} />
           <Route path="/audit" element={<AuditLog />} />
         </Routes>

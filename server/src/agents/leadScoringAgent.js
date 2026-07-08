@@ -80,6 +80,53 @@ export function scoreAllLeads() {
   return recipients.map((r) => scoreLead({ email: r.email }));
 }
 
+// STORY-015 — audience segments by score band. Ordered high→low; the first
+// band whose `min` a score meets wins. Centralized so thresholds are tunable.
+export const SEGMENTS = [
+  { name: 'hot', min: 70, label: 'Hot (highly engaged)' },
+  { name: 'warm', min: 40, label: 'Warm (engaged)' },
+  { name: 'cold', min: 1, label: 'Cold (low engagement)' },
+  { name: 'dormant', min: 0, label: 'Dormant (no/negative engagement)' },
+];
+
+/** Map a score to its segment name. */
+export function segmentForScore(score) {
+  return (SEGMENTS.find((s) => score >= s.min) || SEGMENTS[SEGMENTS.length - 1]).name;
+}
+
+/**
+ * STORY-015 — segment the whole audience by current lead scores. Updates each
+ * lead's `segment` and returns per-segment counts. Audited as a summary.
+ * @returns {{ segments: Record<string, number>, total: number }}
+ */
+export function segmentAudience() {
+  const taskId = startTask({ agentId: AGENT_ID, taskType: 'segmentAudience' });
+  try {
+    const leads = all('SELECT * FROM leads');
+    const counts = Object.fromEntries(SEGMENTS.map((s) => [s.name, 0]));
+    for (const lead of leads) {
+      const segment = segmentForScore(lead.score);
+      run("UPDATE leads SET segment = ?, updated_at = datetime('now') WHERE id = ?", [segment, lead.id]);
+      counts[segment] += 1;
+    }
+    logAction({
+      userId: null,
+      action: 'audience.segmented',
+      details: { agent: AGENT_ID, total: leads.length, segments: counts },
+    });
+    finishTask(taskId, 'done');
+    return { segments: counts, total: leads.length };
+  } catch (err) {
+    finishTask(taskId, 'failed');
+    throw err;
+  }
+}
+
+/** Leads in a given segment (for targeting). */
+export function leadsInSegment(segment) {
+  return all('SELECT * FROM leads WHERE segment = ? ORDER BY score DESC', [segment]);
+}
+
 export function listLeads({ orderByScore = true } = {}) {
   return all(`SELECT * FROM leads ORDER BY ${orderByScore ? 'score DESC, id ASC' : 'id ASC'}`);
 }

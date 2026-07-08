@@ -131,7 +131,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-012 Track Email Engagement Metrics — Analytics Agent ingests engagement events (opens/clicks/bounces/etc.; ESP-webhook swap-in point) and computes per-campaign metrics (counts + open/click/bounce rates, unique vs total).
 - ✅ STORY-013 Visualize Email Engagement Metrics — Analytics page with per-campaign KPI tiles (delivered/opens/clicks/bounces) and accessible labeled meter bars for open/click/bounce/unsubscribe rates; includes a "simulate engagement" helper for demos.
 - ✅ STORY-014 Assign Lead Scores Based on Engagement Data — Lead Scoring Agent derives a 0–100 score from weighted engagement (open/click/bounce/unsubscribe), clamped, upserted per lead, and audited (before/after). Explicit swap-in point for an ML model.
-- ⬜ STORY-015 Segment Audiences Based on Lead Scores
+- ✅ STORY-015 Segment Audiences Based on Lead Scores — `segmentAudience` buckets leads into hot/warm/cold/dormant by score band, returns per-segment counts, and audits the summary; leads can be listed per segment for targeting. Audience UI added. **Completes R3.**
 
 **R4 — Polish** — ⬜ STORY-016…019
 **R5 — Launch** — ⬜ STORY-020…023

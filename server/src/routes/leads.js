@@ -5,7 +5,15 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { scoreLead, scoreAllLeads, listLeads, getLead } from '../agents/leadScoringAgent.js';
+import {
+  scoreLead,
+  scoreAllLeads,
+  listLeads,
+  getLead,
+  segmentAudience,
+  leadsInSegment,
+  SEGMENTS,
+} from '../agents/leadScoringAgent.js';
 
 const router = Router();
 
@@ -22,6 +30,21 @@ router.post('/score', requireUser, (req, res) => {
 // Re-score all leads with engagement data.  POST /api/leads/score-all
 router.post('/score-all', requireUser, (_req, res) => {
   res.json({ leads: scoreAllLeads() });
+});
+
+// STORY-015 — segment the whole audience by score.  POST /api/leads/segment
+router.post('/segment', requireUser, (_req, res) => {
+  res.json(segmentAudience());
+});
+
+// Segment definitions.  GET /api/leads/segments
+router.get('/segments', requireUser, (_req, res) => {
+  res.json({ segments: SEGMENTS });
+});
+
+// Leads in a segment.  GET /api/leads/segment/:name
+router.get('/segment/:name', requireUser, (req, res) => {
+  res.json({ leads: leadsInSegment(req.params.name) });
 });
 
 // List leads (highest score first).  GET /api/leads

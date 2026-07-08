@@ -65,6 +65,11 @@ export const api = {
   ingestEngagement: (userId, events) =>
     request('/api/analytics/email/events', { method: 'POST', body: { events }, userId }),
 
+  // Leads & audience segmentation
+  listLeads: (userId) => request('/api/leads', { userId }),
+  scoreAllLeads: (userId) => request('/api/leads/score-all', { method: 'POST', userId }),
+  segmentAudience: (userId) => request('/api/leads/segment', { method: 'POST', userId }),
+
   // Session / RBAC
   me: (userId) => request('/api/me', { userId }),
 
