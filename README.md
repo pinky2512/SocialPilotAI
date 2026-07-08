@@ -114,7 +114,11 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-002 Content Draft Approval Workflow — Governance Agent submits drafts into the approval gate and records human approve/reject decisions; content can only reach `approved` through `approval_processes`, and every transition is audited.
 - ✅ STORY-003 Seamless Content Editing Interface — React Content Studio to generate, inline-edit, and submit drafts, plus an Approval Queue view; editing records before/after in the audit log and an edited-after-submit draft returns to `draft` (re-approval required).
 
-**R1 — Core Build** — ⬜ STORY-004…007
+**R1 — Core Build**
+- ✅ STORY-004 Connect Social Media Accounts — Social Media Posting Agent connects/lists/disconnects accounts across supported platforms; every attempt logged to `integration_logs` + audit log (explicit OAuth swap-in point).
+- ⬜ STORY-005 Schedule Multi-Platform Posts
+- ⬜ STORY-006 Handle Platform-Specific Nuances
+- ⬜ STORY-007 Post to Multiple Platforms
 **R2 — Reliability & Trust** — ⬜ STORY-008…011
 
 ### Phase 2 — Core + Reliability — ⬜ STORY-012…023

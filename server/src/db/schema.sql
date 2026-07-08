@@ -72,6 +72,9 @@ CREATE TABLE IF NOT EXISTS ai_agent_tasks (
 CREATE TABLE IF NOT EXISTS approval_processes (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   content_id    INTEGER REFERENCES content(id),
+  -- post_id added in R1 (STORY-005) so the same append/approve/reject gate
+  -- machinery serves social posts too. Exactly one target column is set per row.
+  post_id       INTEGER REFERENCES social_posts(id),
   approver_id   INTEGER REFERENCES users(id),   -- set when a decision is made
   status        TEXT    NOT NULL DEFAULT 'pending', -- pending -> approved | rejected
   decision_date TEXT
@@ -84,4 +87,35 @@ CREATE TABLE IF NOT EXISTS integration_logs (
   status           TEXT    NOT NULL,
   timestamp        TEXT    NOT NULL DEFAULT (datetime('now')),
   details          TEXT
+);
+
+-- R1 (STORY-004) — connected social media accounts.
+-- DEV NOTE: real OAuth token exchange is out of local scope; access_token holds
+-- a placeholder. connectAccount() is the swap-in point for a real OAuth flow.
+CREATE TABLE IF NOT EXISTS social_accounts (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id      INTEGER NOT NULL REFERENCES users(id),
+  platform     TEXT    NOT NULL,       -- twitter | linkedin | instagram | facebook
+  handle       TEXT    NOT NULL,       -- @handle / page name
+  access_token TEXT,                   -- placeholder for OAuth token (dev)
+  status       TEXT    NOT NULL DEFAULT 'connected', -- connected | disconnected
+  connected_at TEXT    NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (user_id, platform, handle)
+);
+
+-- R1 (STORY-005/007) — social posts, one row per platform target.
+-- Approval-gate contract: a post reaches 'published' only after a human
+-- approves it via approval_processes.
+CREATE TABLE IF NOT EXISTS social_posts (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_id   INTEGER REFERENCES content(id),   -- the approved content being posted
+  account_id   INTEGER NOT NULL REFERENCES social_accounts(id),
+  platform     TEXT    NOT NULL,
+  post_text    TEXT    NOT NULL,                 -- platform-adapted text
+  scheduled_at TEXT,                             -- ISO time to publish
+  -- lifecycle: draft -> pending_approval -> approved -> published | failed | rejected
+  status       TEXT    NOT NULL DEFAULT 'draft',
+  published_at TEXT,
+  created_by   INTEGER REFERENCES users(id),
+  created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
