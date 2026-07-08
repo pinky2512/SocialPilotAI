@@ -123,7 +123,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-008 Approval Workflow for Social Media Posts — Governance-owned post-approval workflow: submit/re-submit, revise rejected posts, approve/reject; a post never publishes without approval. `docs/trust-before-intelligence.md` added.
 - ✅ STORY-009 Audit Log for Social Media Actions — queryable, read-only audit trail (filter by action/prefix/user; per-post & per-content trails). Every social action is recorded append-only; log remains immutable.
 - ✅ STORY-010 Role-Based Access Control for Social Media Features — Security & Access Control Agent enforces a role→permission matrix on every social route (connect/schedule/publish/view); denied attempts return 403 and are recorded as `access.denied` in the audit log. UI gates buttons by permission (`/api/me`).
-- ⬜ STORY-011 Create and Schedule Email Campaign
+- ✅ STORY-011 Create and Schedule Email Campaign — Email Campaign Agent creates drafts, schedules them (held at the approval gate), and sends **only approved** campaigns (gate enforced at send time); simulated ESP send with an explicit swap-in point; RBAC-gated + audited. **Completes R2 → Phase 1 sign-off gate.**
 
 ### Phase 2 — Core + Reliability — ⬜ STORY-012…023
 ### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035

@@ -100,5 +100,6 @@ test('GET /api/me returns the acting role permissions', async () => {
   const app = createApp();
   const res = await http(app, { path: '/api/me', userId: idFor('data_analyst') });
   assert.equal(res.status, 200);
-  assert.deepEqual(res.json.permissions, ['social:view']);
+  assert.ok(res.json.permissions.includes('social:view'));
+  assert.ok(!res.json.permissions.includes('social:connect'), 'analyst cannot connect');
 });

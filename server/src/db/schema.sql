@@ -75,6 +75,8 @@ CREATE TABLE IF NOT EXISTS approval_processes (
   -- post_id added in R1 (STORY-005) so the same append/approve/reject gate
   -- machinery serves social posts too. Exactly one target column is set per row.
   post_id       INTEGER REFERENCES social_posts(id),
+  -- email_campaign_id added in R2 (STORY-011) so email campaigns use the gate too.
+  email_campaign_id INTEGER REFERENCES email_campaigns(id),
   approver_id   INTEGER REFERENCES users(id),   -- set when a decision is made
   status        TEXT    NOT NULL DEFAULT 'pending', -- pending -> approved | rejected
   decision_date TEXT
@@ -116,6 +118,25 @@ CREATE TABLE IF NOT EXISTS social_posts (
   -- lifecycle: draft -> pending_approval -> approved -> published | failed | rejected
   status       TEXT    NOT NULL DEFAULT 'draft',
   published_at TEXT,
+  created_by   INTEGER REFERENCES users(id),
+  created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- R2 (STORY-011) — email campaigns.
+-- Approval-gate contract: a campaign reaches 'sent' only after a human approves
+-- it via approval_processes (enforced in sendEmail + trust/approvals.js).
+-- DEV NOTE: the actual email-provider send is simulated; sendEmail() is the
+-- swap-in point for a real ESP (SendGrid/SES/etc.).
+CREATE TABLE IF NOT EXISTS email_campaigns (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT    NOT NULL,
+  subject      TEXT    NOT NULL,
+  body         TEXT    NOT NULL,
+  audience     TEXT,                                  -- segment/list descriptor
+  -- lifecycle: draft -> pending_approval -> approved -> sent | rejected
+  status       TEXT    NOT NULL DEFAULT 'draft',
+  scheduled_at TEXT,
+  sent_at      TEXT,
   created_by   INTEGER REFERENCES users(id),
   created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );

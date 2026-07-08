@@ -49,6 +49,16 @@ export const api = {
     request(`/api/social/posts/${id}/publish`, { method: 'POST', userId }),
   publishDue: (userId) => request('/api/social/publish-due', { method: 'POST', userId }),
 
+  // Email campaigns
+  listCampaigns: (userId, status) =>
+    request(`/api/email/campaigns${status ? `?status=${status}` : ''}`, { userId }),
+  createCampaign: (userId, payload) =>
+    request('/api/email/campaigns', { method: 'POST', body: payload, userId }),
+  scheduleCampaign: (userId, id, scheduledAt) =>
+    request(`/api/email/campaigns/${id}/schedule`, { method: 'POST', body: { scheduledAt }, userId }),
+  sendCampaign: (userId, id) =>
+    request(`/api/email/campaigns/${id}/send`, { method: 'POST', userId }),
+
   // Session / RBAC
   me: (userId) => request('/api/me', { userId }),
 

@@ -12,6 +12,12 @@ export const PERMISSIONS = Object.freeze({
   SOCIAL_SCHEDULE: 'social:schedule',
   SOCIAL_PUBLISH: 'social:publish',
   SOCIAL_APPROVE: 'social:approve',
+
+  // Email campaign features (STORY-011)
+  EMAIL_VIEW: 'email:view',
+  EMAIL_CREATE: 'email:create',
+  EMAIL_SEND: 'email:send',
+  EMAIL_APPROVE: 'email:approve',
 });
 
 // Wildcard grants every permission (platform admin).
@@ -24,19 +30,28 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.SOCIAL_CONNECT,
     PERMISSIONS.SOCIAL_SCHEDULE,
     PERMISSIONS.SOCIAL_PUBLISH,
+    PERMISSIONS.EMAIL_VIEW,
+    PERMISSIONS.EMAIL_CREATE,
+    PERMISSIONS.EMAIL_SEND,
   ],
   [ROLES.CONTENT_CREATOR]: [
     PERMISSIONS.SOCIAL_VIEW,
     PERMISSIONS.SOCIAL_SCHEDULE,
+    PERMISSIONS.EMAIL_VIEW,
+    PERMISSIONS.EMAIL_CREATE,
   ],
-  // Leadership provides the human approval + can release approved posts.
+  // Leadership provides the human approval + can release approved posts/emails.
   [ROLES.MARKETING_LEADERSHIP]: [
     PERMISSIONS.SOCIAL_VIEW,
     PERMISSIONS.SOCIAL_APPROVE,
     PERMISSIONS.SOCIAL_PUBLISH,
+    PERMISSIONS.EMAIL_VIEW,
+    PERMISSIONS.EMAIL_APPROVE,
+    PERMISSIONS.EMAIL_SEND,
   ],
   [ROLES.DATA_ANALYST]: [
     PERMISSIONS.SOCIAL_VIEW,
+    PERMISSIONS.EMAIL_VIEW,
   ],
 });
 

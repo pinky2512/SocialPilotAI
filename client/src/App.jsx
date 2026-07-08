@@ -3,6 +3,7 @@ import { useSession } from './session.jsx';
 import ContentStudio from './pages/ContentStudio.jsx';
 import ApprovalQueue from './pages/ApprovalQueue.jsx';
 import Social from './pages/Social.jsx';
+import Email from './pages/Email.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
         <nav className="nav">
           <NavLink to="/studio">Content Studio</NavLink>
           <NavLink to="/social">Social</NavLink>
+          <NavLink to="/email">Email</NavLink>
           <NavLink to="/approvals">Approval Queue</NavLink>
           <NavLink to="/audit">Audit Log</NavLink>
         </nav>
@@ -37,6 +39,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/studio" replace />} />
           <Route path="/studio" element={<ContentStudio />} />
           <Route path="/social" element={<Social />} />
+          <Route path="/email" element={<Email />} />
           <Route path="/approvals" element={<ApprovalQueue />} />
           <Route path="/audit" element={<AuditLog />} />
         </Routes>
