@@ -119,7 +119,11 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-005 Schedule Multi-Platform Posts — `schedulePost` creates one post per target account (text adapted per platform) and holds each at the post-approval gate; nothing publishes without human sign-off. The approval gate is now generic (content + posts).
 - ✅ STORY-006 Handle Platform-Specific Nuances — per-platform adaptation (char limits, hashtag caps, non-clickable-link handling) + a validator; preview endpoint shows how a draft renders on each platform before scheduling.
 - ✅ STORY-007 Post to Multiple Platforms — `publishPost`/`publishDuePosts` publish only APPROVED posts (gate enforced at publish time), simulate the platform API (swap-in point), and log success/failure to `integration_logs` + audit log. Social page added to the UI.
-**R2 — Reliability & Trust** — ⬜ STORY-008…011
+**R2 — Reliability & Trust**
+- ✅ STORY-008 Approval Workflow for Social Media Posts — Governance-owned post-approval workflow: submit/re-submit, revise rejected posts, approve/reject; a post never publishes without approval. `docs/trust-before-intelligence.md` added.
+- ⬜ STORY-009 Audit Log for Social Media Actions
+- ⬜ STORY-010 Role-Based Access Control for Social Media Features
+- ⬜ STORY-011 Create and Schedule Email Campaign
 
 ### Phase 2 — Core + Reliability — ⬜ STORY-012…023
 ### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035

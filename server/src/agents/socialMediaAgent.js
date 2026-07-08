@@ -151,6 +151,29 @@ export function platformCatalog() {
   return SUPPORTED_PLATFORMS.map((platform) => ({ platform, ...PLATFORM_RULES[platform] }));
 }
 
+/**
+ * STORY-008 — revise a post's text while it is still editable (draft/rejected).
+ * Re-adapts to the platform and records before/after in the audit log. A
+ * published/approved/pending post cannot be edited.
+ */
+export function editPost({ postId, editorId, postText }) {
+  const post = get('SELECT * FROM social_posts WHERE id = ?', [postId]);
+  if (!post) throw new Error(`post ${postId} not found`);
+  if (!['draft', 'rejected'].includes(post.status)) {
+    throw new Error(`post ${postId} is '${post.status}' and can no longer be edited`);
+  }
+  if (!postText || !String(postText).trim()) throw new Error('postText is required');
+  const before = post.post_text;
+  const adapted = adaptForPlatform(postText, post.platform);
+  run('UPDATE social_posts SET post_text = ? WHERE id = ?', [adapted, postId]);
+  logAction({
+    userId: editorId,
+    action: 'social.post_edited',
+    details: { postId, platform: post.platform, before, after: adapted },
+  });
+  return get('SELECT * FROM social_posts WHERE id = ?', [postId]);
+}
+
 export function listPosts({ status } = {}) {
   return status
     ? all('SELECT * FROM social_posts WHERE status = ? ORDER BY id DESC', [status])

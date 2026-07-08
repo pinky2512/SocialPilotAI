@@ -15,7 +15,9 @@ import {
   platformCatalog,
   publishPost,
   publishDuePosts,
+  editPost,
 } from '../agents/socialMediaAgent.js';
+import { submitPostForApproval } from '../agents/governanceAgent.js';
 
 const router = Router();
 
@@ -76,6 +78,26 @@ router.post('/posts', requireUser, (req, res) => {
 // List posts (optionally by status).  GET /api/social/posts?status=approved
 router.get('/posts', requireUser, (req, res) => {
   res.json({ posts: listPosts({ status: req.query.status }) });
+});
+
+// STORY-008 — revise a draft/rejected post.  PATCH /api/social/posts/:id { postText }
+router.patch('/posts/:id', requireUser, (req, res) => {
+  try {
+    const post = editPost({ postId: Number(req.params.id), editorId: req.user.id, postText: (req.body || {}).postText });
+    res.json({ post });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// STORY-008 — (re)submit a post for approval.  POST /api/social/posts/:id/submit
+router.post('/posts/:id/submit', requireUser, (req, res) => {
+  try {
+    const approval = submitPostForApproval({ postId: Number(req.params.id), requestedBy: req.user.id });
+    res.status(201).json({ approval });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 // STORY-007 — publish a single approved post.  POST /api/social/posts/:id/publish
