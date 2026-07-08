@@ -1,5 +1,6 @@
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useSession } from './session.jsx';
+import Dashboard from './pages/Dashboard.jsx';
 import ContentStudio from './pages/ContentStudio.jsx';
 import ApprovalQueue from './pages/ApprovalQueue.jsx';
 import Social from './pages/Social.jsx';
@@ -18,6 +19,7 @@ export default function App() {
           <span className="logo">◆</span> Social Pilot <span className="ai">AI</span>
         </div>
         <nav className="nav">
+          <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/studio">Content Studio</NavLink>
           <NavLink to="/social">Social</NavLink>
           <NavLink to="/email">Email</NavLink>
@@ -40,7 +42,8 @@ export default function App() {
 
       <main className="content">
         <Routes>
-          <Route path="/" element={<Navigate to="/studio" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/studio" element={<ContentStudio />} />
           <Route path="/social" element={<Social />} />
           <Route path="/email" element={<Email />} />

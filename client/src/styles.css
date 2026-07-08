@@ -81,6 +81,10 @@ button.ghost { background: transparent; }
 .status-rejected { background: rgba(255,107,122,0.15); color: var(--danger); }
 .status-published { background: rgba(108,123,255,0.18); color: var(--accent); }
 
+.live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); margin-left: 6px; vertical-align: middle; }
+.live-dot.on { background: var(--accent-2); box-shadow: 0 0 0 0 rgba(74,211,168,0.6); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(74,211,168,0.5); } 70% { box-shadow: 0 0 0 8px rgba(74,211,168,0); } 100% { box-shadow: 0 0 0 0 rgba(74,211,168,0); } }
+
 /* Analytics visualization */
 .metric-block { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; background: var(--panel-2); }
 .metric-block h3 { margin: 0; font-size: 15px; display: flex; align-items: center; gap: 8px; }
