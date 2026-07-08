@@ -17,6 +17,23 @@ export function createApp() {
     res.json({ status: 'ok', service: 'social-pilot-ai', time: new Date().toISOString() });
   });
 
+  // Friendly root: this is an API server (the UI is the React client on :5173).
+  // Returns a small index of available endpoints so hitting '/' isn't confusing.
+  app.get('/', (_req, res) => {
+    res.json({
+      service: 'Social Pilot AI — API',
+      note: 'This is the backend API. The web UI runs separately (React client, default http://localhost:5173).',
+      health: '/api/health',
+      endpoints: {
+        content: '/api/content',
+        approvals: '/api/approvals/pending',
+        social: '/api/social/accounts',
+        audit: '/api/audit',
+      },
+      docs: 'See README.md and docs/trust-before-intelligence.md',
+    });
+  });
+
   app.use('/api/content', contentRoutes);
   app.use('/api/approvals', approvalRoutes);
   app.use('/api/social', socialRoutes);
