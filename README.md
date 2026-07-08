@@ -129,7 +129,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 
 **R3 — Data & Export**
 - ✅ STORY-012 Track Email Engagement Metrics — Analytics Agent ingests engagement events (opens/clicks/bounces/etc.; ESP-webhook swap-in point) and computes per-campaign metrics (counts + open/click/bounce rates, unique vs total).
-- ⬜ STORY-013 Visualize Email Engagement Metrics
+- ✅ STORY-013 Visualize Email Engagement Metrics — Analytics page with per-campaign KPI tiles (delivered/opens/clicks/bounces) and accessible labeled meter bars for open/click/bounce/unsubscribe rates; includes a "simulate engagement" helper for demos.
 - ⬜ STORY-014 Assign Lead Scores Based on Engagement Data
 - ⬜ STORY-015 Segment Audiences Based on Lead Scores
 

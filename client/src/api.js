@@ -59,6 +59,12 @@ export const api = {
   sendCampaign: (userId, id) =>
     request(`/api/email/campaigns/${id}/send`, { method: 'POST', userId }),
 
+  // Analytics — email engagement
+  emailMetrics: (userId) => request('/api/analytics/email/metrics', { userId }),
+  campaignMetrics: (userId, id) => request(`/api/analytics/email/${id}/metrics`, { userId }),
+  ingestEngagement: (userId, events) =>
+    request('/api/analytics/email/events', { method: 'POST', body: { events }, userId }),
+
   // Session / RBAC
   me: (userId) => request('/api/me', { userId }),
 
