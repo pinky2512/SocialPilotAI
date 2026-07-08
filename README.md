@@ -137,7 +137,7 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-016 Update Lead Scores in Real-Time — Lead Scoring Agent subscribes to `newCampaignData` on the broker and re-scores the affected lead immediately on each engagement event (enabled at server boot; opt-in so tests stay isolated).
 - ✅ STORY-017 Predictive Analytics for Campaign Performance — Analytics Agent forecasts final open/click rates by blending observed engagement with a historical baseline (weighted by sample size), with confidence tiers and projected totals; explicit ML swap-in point.
 - ✅ STORY-018 Real-Time Metrics Dashboard — `updateDashboard` aggregate (totals, overall rates, per-campaign actuals + forecast) + a live Dashboard page that polls every 5s so metrics update in real time as engagement arrives.
-- ⬜ STORY-019 Recommendations for Optimizing Future Campaigns
+- ✅ STORY-019 Recommendations for Optimizing Future Campaigns — Analytics Agent generates prioritized, rationale-backed recommendations from metrics vs baseline (improve-subject, strengthen-CTA, clean-list, reduce-frequency, replicate, on-track); shown on the Dashboard. **Completes R4.**
 **R5 — Launch** — ⬜ STORY-020…023
 ### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

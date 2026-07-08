@@ -62,6 +62,7 @@ export const api = {
   // Analytics — email engagement
   dashboard: (userId) => request('/api/analytics/dashboard', { userId }),
   predictAll: (userId) => request('/api/analytics/predict', { userId }),
+  recommendations: (userId) => request('/api/analytics/recommendations', { userId }),
   emailMetrics: (userId) => request('/api/analytics/email/metrics', { userId }),
   campaignMetrics: (userId, id) => request(`/api/analytics/email/${id}/metrics`, { userId }),
   ingestEngagement: (userId, events) =>

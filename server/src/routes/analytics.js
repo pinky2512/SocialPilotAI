@@ -13,6 +13,8 @@ import {
   allPredictiveInsights,
   historicalBaseline,
   updateDashboard,
+  generateRecommendations,
+  allRecommendations,
 } from '../agents/analyticsAgent.js';
 
 const router = Router();
@@ -65,6 +67,19 @@ router.get('/predict', requireUser, (_req, res) => {
 // STORY-018 — real-time metrics dashboard snapshot.  GET /api/analytics/dashboard
 router.get('/dashboard', requireUser, (_req, res) => {
   res.json({ dashboard: updateDashboard() });
+});
+
+// STORY-019 — optimization recommendations.
+// GET /api/analytics/recommendations  (all)  |  /recommendations/:campaignId
+router.get('/recommendations', requireUser, (_req, res) => {
+  res.json({ recommendations: allRecommendations() });
+});
+router.get('/recommendations/:campaignId', requireUser, (req, res) => {
+  try {
+    res.json({ recommendations: generateRecommendations({ campaignId: Number(req.params.campaignId) }) });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
 });
 
 export default router;

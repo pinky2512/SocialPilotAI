@@ -180,6 +180,68 @@ export function allPredictiveInsights() {
 // polls. Reflects the latest engagement each call, so with the client polling
 // it updates in real time.
 
+// --- STORY-019: optimization recommendations ------------------------------
+//
+// Rules-based recommendations derived from a campaign's metrics vs the
+// historical baseline. SWAP-IN POINT: replace generateRecommendations() with an
+// ML/LLM recommender; the { type, message, rationale, priority, metric } shape
+// is the contract callers depend on.
+
+export function generateRecommendations({ campaignId }) {
+  const m = campaignMetrics(campaignId);
+  const baseline = historicalBaseline();
+  const recs = [];
+  const add = (type, priority, metric, message, rationale) =>
+    recs.push({ type, priority, metric, message, rationale });
+
+  const delivered = m.counts.delivered;
+  if (delivered < 50) {
+    add('gather-data', 'low', 'delivered',
+      'Gather more engagement data before optimizing.',
+      `Only ${delivered} delivered — too small a sample for confident recommendations.`);
+    return { campaignId, name: m.name, recommendations: recs };
+  }
+
+  if (m.rates.openRate < baseline.openRate * 0.9) {
+    add('improve-subject', 'high', 'openRate',
+      'Test stronger subject lines and preview text.',
+      `Open rate ${m.rates.openRate}% is below the ${baseline.openRate}% baseline.`);
+  } else if (m.rates.openRate > baseline.openRate * 1.2) {
+    add('replicate', 'medium', 'openRate',
+      'Replicate this subject/tone in future campaigns.',
+      `Open rate ${m.rates.openRate}% is well above the ${baseline.openRate}% baseline.`);
+  }
+
+  if (m.rates.clickRate < Math.max(baseline.clickRate * 0.9, 1)) {
+    add('strengthen-cta', 'high', 'clickRate',
+      'Strengthen the call-to-action and link placement.',
+      `Click rate ${m.rates.clickRate}% is below the ${baseline.clickRate}% baseline.`);
+  }
+
+  if (m.rates.bounceRate > 2) {
+    add('clean-list', 'high', 'bounceRate',
+      'Clean your recipient list to reduce bounces.',
+      `Bounce rate ${m.rates.bounceRate}% exceeds the 2% healthy threshold.`);
+  }
+
+  if (m.rates.unsubscribeRate > 1) {
+    add('reduce-frequency', 'medium', 'unsubscribeRate',
+      'Reduce send frequency or tighten targeting.',
+      `Unsubscribe rate ${m.rates.unsubscribeRate}% is high (>1%).`);
+  }
+
+  if (recs.length === 0) {
+    add('on-track', 'low', 'overall',
+      'Performance is on track — maintain current strategy.',
+      'All rates are at or above baseline with healthy bounce/unsubscribe.');
+  }
+  return { campaignId, name: m.name, recommendations: recs };
+}
+
+export function allRecommendations() {
+  return all('SELECT id FROM email_campaigns ORDER BY id DESC').map((c) => generateRecommendations({ campaignId: c.id }));
+}
+
 export function updateDashboard() {
   const metrics = allCampaignMetrics();
   const sum = (sel) => metrics.reduce((s, m) => s + sel(m), 0);
