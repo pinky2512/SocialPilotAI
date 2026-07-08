@@ -138,6 +138,10 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-017 Predictive Analytics for Campaign Performance — Analytics Agent forecasts final open/click rates by blending observed engagement with a historical baseline (weighted by sample size), with confidence tiers and projected totals; explicit ML swap-in point.
 - ✅ STORY-018 Real-Time Metrics Dashboard — `updateDashboard` aggregate (totals, overall rates, per-campaign actuals + forecast) + a live Dashboard page that polls every 5s so metrics update in real time as engagement arrives.
 - ✅ STORY-019 Recommendations for Optimizing Future Campaigns — Analytics Agent generates prioritized, rationale-backed recommendations from metrics vs baseline (improve-subject, strengthen-CTA, clean-list, reduce-frequency, replicate, on-track); shown on the Dashboard. **Completes R4.**
-**R5 — Launch** — ⬜ STORY-020…023
+**R5 — Launch**
+- ✅ STORY-020 Unified Dashboard for Campaign Metrics — single cross-channel overview (content, social, email, engagement, leads, pending approvals) via `unifiedOverview`; shown as a Unified Overview panel on the Dashboard.
+- ⬜ STORY-021 Latency Optimization for Real-Time Dashboard
+- ⬜ STORY-022 Handling Large Datasets in Real-Time Dashboard
+- ⬜ STORY-023 Audit Logging for Predictive Analytics
 ### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

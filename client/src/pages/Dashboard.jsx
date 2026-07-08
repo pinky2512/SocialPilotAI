@@ -12,6 +12,7 @@ const PRIORITY_TONE = { high: 'rejected', medium: 'pending_approval', low: 'draf
 export default function Dashboard() {
   const { userId } = useSession();
   const [d, setD] = useState(null);
+  const [overview, setOverview] = useState(null);
   const [recs, setRecs] = useState([]);
   const [error, setError] = useState('');
   const [live, setLive] = useState(true);
@@ -19,12 +20,14 @@ export default function Dashboard() {
 
   async function load() {
     try {
-      const [{ dashboard }, { recommendations }] = await Promise.all([
+      const [{ dashboard }, { recommendations }, { overview }] = await Promise.all([
         api.dashboard(userId),
         api.recommendations(userId),
+        api.overview(userId),
       ]);
       setD(dashboard);
       setRecs(recommendations);
+      setOverview(overview);
       setError('');
     } catch (e) {
       setError(e.message);
@@ -68,6 +71,19 @@ export default function Dashboard() {
           </>
         )}
       </section>
+
+      {overview && (
+        <section className="panel">
+          <h2>Unified campaign overview</h2>
+          <p className="hint">Cross-channel metrics across content, social, email, and audience.</p>
+          <div className="overview-grid">
+            <Channel title="Content" total={overview.content.total} byStatus={overview.content.byStatus} />
+            <Channel title="Social posts" total={overview.social.total} byStatus={overview.social.byStatus} />
+            <Channel title="Email" total={overview.email.total} byStatus={overview.email.byStatus} />
+            <Channel title="Leads" total={overview.leads.total} byStatus={overview.leads.bySegment} />
+          </div>
+        </section>
+      )}
 
       {d && (
         <section className="panel">
@@ -123,6 +139,23 @@ function Kpi({ label, value }) {
     <div className="kpi">
       <div className="kpi-value">{value}</div>
       <div className="kpi-label">{label}</div>
+    </div>
+  );
+}
+
+function Channel({ title, total, byStatus }) {
+  return (
+    <div className="channel-card">
+      <div className="channel-head">
+        <span>{title}</span>
+        <span className="channel-total">{total}</span>
+      </div>
+      <ul className="channel-list">
+        {Object.entries(byStatus).map(([k, v]) => (
+          <li key={k}><span className="muted">{k.replace('_', ' ')}</span><span>{v}</span></li>
+        ))}
+        {Object.keys(byStatus).length === 0 && <li className="muted">no items</li>}
+      </ul>
     </div>
   );
 }

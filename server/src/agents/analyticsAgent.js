@@ -180,6 +180,54 @@ export function allPredictiveInsights() {
 // polls. Reflects the latest engagement each call, so with the client polling
 // it updates in real time.
 
+// --- STORY-020: unified cross-channel overview ----------------------------
+//
+// A single snapshot spanning content, social, email, engagement, and leads —
+// the unified campaign-metrics view. Reads tables directly for reporting (a
+// read-only dashboard concern owned by the Analytics Agent, REQ-006).
+
+function countsByStatus(table) {
+  const rows = all(`SELECT status, COUNT(*) AS n FROM ${table} GROUP BY status`);
+  return Object.fromEntries(rows.map((r) => [r.status, r.n]));
+}
+function total(table) {
+  return all(`SELECT COUNT(*) AS n FROM ${table}`)[0].n;
+}
+
+export function unifiedOverview() {
+  const engagement = allCampaignMetrics().reduce(
+    (acc, m) => {
+      acc.delivered += m.counts.delivered;
+      acc.opens += m.counts.uniqueOpens;
+      acc.clicks += m.counts.uniqueClicks;
+      return acc;
+    },
+    { delivered: 0, opens: 0, clicks: 0 }
+  );
+  const pct = (n) => (engagement.delivered > 0 ? Math.round((n / engagement.delivered) * 1000) / 10 : 0);
+
+  const leadSegments = all('SELECT segment, COUNT(*) AS n FROM leads GROUP BY segment');
+
+  return {
+    generatedAt: new Date().toISOString(),
+    content: { total: total('content'), byStatus: countsByStatus('content') },
+    social: { total: total('social_posts'), byStatus: countsByStatus('social_posts') },
+    email: { total: total('email_campaigns'), byStatus: countsByStatus('email_campaigns') },
+    engagement: {
+      ...engagement,
+      openRate: pct(engagement.opens),
+      clickRate: pct(engagement.clicks),
+    },
+    leads: {
+      total: total('leads'),
+      bySegment: Object.fromEntries(leadSegments.map((r) => [r.segment || 'unsegmented', r.n])),
+    },
+    approvals: {
+      pending: all("SELECT COUNT(*) AS n FROM approval_processes WHERE status = 'pending'")[0].n,
+    },
+  };
+}
+
 // --- STORY-019: optimization recommendations ------------------------------
 //
 // Rules-based recommendations derived from a campaign's metrics vs the

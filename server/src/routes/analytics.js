@@ -15,6 +15,7 @@ import {
   updateDashboard,
   generateRecommendations,
   allRecommendations,
+  unifiedOverview,
 } from '../agents/analyticsAgent.js';
 
 const router = Router();
@@ -62,6 +63,11 @@ router.get('/predict/:campaignId', requireUser, (req, res) => {
 // GET /api/analytics/predict
 router.get('/predict', requireUser, (_req, res) => {
   res.json({ baseline: historicalBaseline(), insights: allPredictiveInsights() });
+});
+
+// STORY-020 — unified cross-channel overview.  GET /api/analytics/overview
+router.get('/overview', requireUser, (_req, res) => {
+  res.json({ overview: unifiedOverview() });
 });
 
 // STORY-018 — real-time metrics dashboard snapshot.  GET /api/analytics/dashboard
