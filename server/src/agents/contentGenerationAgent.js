@@ -10,6 +10,7 @@ import { run, get } from '../db/index.js';
 import { logAction } from '../trust/audit.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
+import { isLLMConfigured, generateDraftWithClaude, CONTENT_MODEL } from './llm.js';
 
 const AGENT_ID = 'content-generation-agent';
 
@@ -26,34 +27,65 @@ const AGENT_ID = 'content-generation-agent';
  */
 export function generateContent({ creatorId, campaignId = null, prompt, platform = 'generic', tone = 'professional' }) {
   if (!prompt || !prompt.trim()) throw new Error('generateContent requires a prompt');
-
   const taskId = startTask({ agentId: AGENT_ID, taskType: 'generateContent' });
   try {
     const draftText = draftFromPrompt({ prompt, platform, tone });
-
-    const info = run(
-      "INSERT INTO content (campaign_id, creator_id, content_text, status) VALUES (?, ?, ?, 'draft')",
-      [campaignId, creatorId, draftText]
-    );
-    const content = get('SELECT * FROM content WHERE id = ?', [info.lastInsertRowid]);
-
-    logAction({
-      userId: creatorId,
-      action: 'content.generated',
-      details: { contentId: content.id, agent: AGENT_ID, prompt, platform, tone, campaignId },
-    });
-
-    finishTask(taskId, 'done');
-
-    // Announce over the broker so governance/other agents can react. Nothing is
-    // published here — publishing requires passing the human approval gate.
-    broker.publish('contentGenerated', { contentId: content.id, creatorId, campaignId });
-
-    return content;
+    return persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone, taskId, source: 'template' });
   } catch (err) {
     finishTask(taskId, 'failed');
     throw err;
   }
+}
+
+/**
+ * generateContentAI — async variant that uses a real LLM (Claude) when one is
+ * configured (ANTHROPIC_API_KEY set), falling back to the template generator
+ * otherwise. This is what the HTTP route uses so the product is genuinely
+ * AI-generated; the sync generateContent above stays template-based for
+ * deterministic internal/test use.
+ *
+ * @param {boolean} [p.useLLM] override auto-detection (tests pass false).
+ */
+export async function generateContentAI({ creatorId, campaignId = null, prompt, platform = 'generic', tone = 'professional', useLLM }) {
+  if (!prompt || !prompt.trim()) throw new Error('generateContent requires a prompt');
+  const viaLLM = useLLM ?? isLLMConfigured();
+  const taskId = startTask({ agentId: AGENT_ID, taskType: 'generateContent' });
+  try {
+    let draftText;
+    let source;
+    if (viaLLM) {
+      draftText = await generateDraftWithClaude({ prompt, platform, tone });
+      source = CONTENT_MODEL;
+    } else {
+      draftText = draftFromPrompt({ prompt, platform, tone });
+      source = 'template';
+    }
+    return persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone, taskId, source });
+  } catch (err) {
+    finishTask(taskId, 'failed');
+    throw err;
+  }
+}
+
+/** Shared persistence: insert draft, audit, close the task, announce. */
+function persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone, taskId, source }) {
+  const info = run(
+    "INSERT INTO content (campaign_id, creator_id, content_text, status) VALUES (?, ?, ?, 'draft')",
+    [campaignId, creatorId, draftText]
+  );
+  const content = get('SELECT * FROM content WHERE id = ?', [info.lastInsertRowid]);
+
+  logAction({
+    userId: creatorId,
+    action: 'content.generated',
+    details: { contentId: content.id, agent: AGENT_ID, prompt, platform, tone, campaignId, source },
+  });
+
+  finishTask(taskId, 'done');
+  // Announce over the broker so governance/other agents can react. Nothing is
+  // published here — publishing requires passing the human approval gate.
+  broker.publish('contentGenerated', { contentId: content.id, creatorId, campaignId });
+  return content;
 }
 
 /**
@@ -100,14 +132,13 @@ export function editContent({ contentId, editorId, contentText }) {
 }
 
 /**
- * PLACEHOLDER content generator (template-based). SWAP-IN POINT for a real LLM.
+ * Template-based content generator — the FALLBACK used when no LLM is
+ * configured (and by the deterministic sync generateContent for tests).
  *
- * Intended real-model contract (drop-in replacement for this function):
+ * The real LLM path lives in ./llm.js (generateDraftWithClaude), used by
+ * generateContentAI. Contract (both implementations):
  *   input:  { prompt: string, platform: string, tone: string }
  *   output: string  // the generated draft body
- * A real implementation would call the Claude API here (e.g. claude-opus-4-8)
- * with a system prompt encoding brand voice + platform rules and return
- * completion text. Callers (generateContent) are unaffected by the swap.
  */
 function draftFromPrompt({ prompt, platform, tone }) {
   const topic = prompt.trim().replace(/\s+/g, ' ');

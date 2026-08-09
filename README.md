@@ -99,6 +99,17 @@ npm run dev      # http://localhost:5173 (proxies /api to the backend on :4000)
 > mirrors the intended PostgreSQL schema 1:1; `server/src/db/index.js` is the
 > single seam to swap to `pg` for production.
 >
+> **Real AI content (Claude):** content generation calls the Claude API when
+> `ANTHROPIC_API_KEY` is set (see `server/src/agents/llm.js`, model
+> `claude-opus-5` by default, override with `CONTENT_MODEL`). Without a key it
+> falls back to the template generator, so the app still runs and tests stay
+> hermetic. To enable it:
+> ```bash
+> # PowerShell
+> $env:ANTHROPIC_API_KEY = "sk-ant-..."
+> npm start
+> ```
+>
 > **Message broker:** `server/src/broker/index.js` is an in-process pub/sub bus
 > exposing the minimal `publish`/`subscribe` surface RabbitMQ/Kafka also
 > provide, so agent code is unaffected by a future swap to a real broker.
