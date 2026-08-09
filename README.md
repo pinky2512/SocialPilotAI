@@ -122,6 +122,15 @@ npm run dev      # http://localhost:5173 (proxies /api to the backend on :4000)
 > exposing the minimal `publish`/`subscribe` surface RabbitMQ/Kafka also
 > provide, so agent code is unaffected by a future swap to a real broker.
 
+### Extensions (beyond the 44 tracked stories)
+
+- **AI image generation** — generate marketing images from a prompt via the
+  OpenAI Images API (`OPENAI_API_KEY`, model `gpt-image-1` by default, override
+  with `OPENAI_IMAGE_MODEL`); a placeholder SVG is produced when no key is set.
+  Images are **held for human approval** before use (same gate as text) and every
+  generation is audited. UI: an **Images** page + image previews in the Approval
+  Queue.
+
 ## Progress log
 
 Legend: ✅ Done · 🚧 In progress · ⬜ Not started

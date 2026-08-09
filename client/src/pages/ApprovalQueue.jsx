@@ -49,7 +49,9 @@ export default function ApprovalQueue() {
                   {p.kind}{p.platform ? ` · ${p.platform}` : ''} #{p.content_id ?? p.post_id}
                 </span>
               </div>
-              <p className="body">{p.preview}</p>
+              {p.kind === 'image'
+                ? <img className="img-preview" src={api.imageUrl(p.image_id)} alt={p.preview} />
+                : <p className="body">{p.preview}</p>}
               <div className="card-actions">
                 <button className="primary" onClick={() => act('approve', p.approval_id)}>Approve</button>
                 <button className="danger" onClick={() => act('reject', p.approval_id)}>Reject</button>

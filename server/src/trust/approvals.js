@@ -29,6 +29,10 @@ const TARGETS = {
     table: 'predictive_recommendations', fk: 'recommendation_id',
     pending: 'pending_approval', approved: 'approved', rejected: 'rejected',
   },
+  image: {
+    table: 'content_images', fk: 'image_id',
+    pending: 'pending_approval', approved: 'approved', rejected: 'rejected',
+  },
 };
 
 /**
@@ -137,7 +141,15 @@ export function pendingApprovals() {
     JOIN predictive_recommendations pr ON pr.id = ap.recommendation_id
     WHERE ap.status = 'pending' AND ap.recommendation_id IS NOT NULL
   `);
-  return [...content, ...posts, ...emails, ...recs].sort((a, b) => a.approval_id - b.approval_id);
+  const images = all(`
+    SELECT ap.id AS approval_id, ap.status AS approval_status, 'image' AS kind,
+           ap.image_id, ('image: ' || ci.prompt) AS preview,
+           ci.status AS target_status, ci.created_by AS creator_id, ci.content_id
+    FROM approval_processes ap
+    JOIN content_images ci ON ci.id = ap.image_id
+    WHERE ap.status = 'pending' AND ap.image_id IS NOT NULL
+  `);
+  return [...content, ...posts, ...emails, ...recs, ...images].sort((a, b) => a.approval_id - b.approval_id);
 }
 
 function target(kind) {

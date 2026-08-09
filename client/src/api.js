@@ -30,6 +30,15 @@ export const api = {
     request(`/api/content/${id}/publish`, { method: 'POST', userId }),
   contentFeedback: (userId, id, rating, comment) =>
     request(`/api/content/${id}/feedback`, { method: 'POST', body: { rating, comment }, userId }),
+
+  // Images
+  generateImage: (userId, payload) =>
+    request('/api/images/generate', { method: 'POST', body: payload, userId }),
+  listImages: (userId, status) =>
+    request(`/api/images${status ? `?status=${status}` : ''}`, { userId }),
+  submitImage: (userId, id) =>
+    request(`/api/images/${id}/submit`, { method: 'POST', userId }),
+  imageUrl: (id) => `/api/images/${id}/file`,
   pendingApprovals: (userId) => request('/api/approvals/pending', { userId }),
   approve: (userId, approvalId) =>
     request(`/api/approvals/${approvalId}/approve`, { method: 'POST', userId }),

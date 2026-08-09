@@ -93,6 +93,8 @@ button.ghost { background: transparent; }
 .channel-list { list-style: none; padding: 0; margin: 0; font-size: 13px; }
 .channel-list li { display: flex; justify-content: space-between; padding: 3px 0; text-transform: capitalize; }
 
+.img-preview { width: 100%; border-radius: 10px; border: 1px solid var(--line); margin: 6px 0; display: block; }
+
 .explain { margin-top: 10px; }
 .explain summary { cursor: pointer; color: var(--accent); font-size: 13px; user-select: none; }
 .explain summary:hover { color: var(--accent-2); }

@@ -5,6 +5,7 @@ import { api } from './api.js';
 import Notifications from './pages/Notifications.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import ContentStudio from './pages/ContentStudio.jsx';
+import Images from './pages/Images.jsx';
 import ApprovalQueue from './pages/ApprovalQueue.jsx';
 import Social from './pages/Social.jsx';
 import Email from './pages/Email.jsx';
@@ -37,6 +38,7 @@ export default function App() {
         <nav className="nav">
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/studio">Content Studio</NavLink>
+          <NavLink to="/images">Images</NavLink>
           <NavLink to="/social">Social</NavLink>
           <NavLink to="/email">Email</NavLink>
           <NavLink to="/analytics">Analytics</NavLink>
@@ -65,6 +67,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/studio" element={<ContentStudio />} />
+          <Route path="/images" element={<Images />} />
           <Route path="/social" element={<Social />} />
           <Route path="/email" element={<Email />} />
           <Route path="/analytics" element={<Analytics />} />

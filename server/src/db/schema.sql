@@ -81,6 +81,8 @@ CREATE TABLE IF NOT EXISTS approval_processes (
   email_campaign_id INTEGER REFERENCES email_campaigns(id),
   -- recommendation_id added in R6 (STORY-024) so predictive recommendations are gated.
   recommendation_id INTEGER REFERENCES predictive_recommendations(id),
+  -- image_id (extension) so AI-generated marketing images are gated too.
+  image_id INTEGER REFERENCES content_images(id),
   approver_id   INTEGER REFERENCES users(id),   -- set when a decision is made
   status        TEXT    NOT NULL DEFAULT 'pending', -- pending -> approved | rejected
   decision_date TEXT
@@ -143,6 +145,22 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   sent_at      TEXT,
   created_by   INTEGER REFERENCES users(id),
   created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+-- EXTENSION — AI-generated marketing images. Held for human approval before
+-- use, exactly like text content. DEV NOTE: real generation uses the OpenAI
+-- Images API (OPENAI_API_KEY); without a key a placeholder SVG is produced.
+CREATE TABLE IF NOT EXISTS content_images (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_id INTEGER REFERENCES content(id),   -- optional: image for a content item
+  prompt     TEXT    NOT NULL,
+  file_path  TEXT,
+  mime       TEXT,
+  -- lifecycle: draft -> pending_approval -> approved | rejected
+  status     TEXT    NOT NULL DEFAULT 'draft',
+  source     TEXT,                              -- image model id, or 'placeholder'
+  created_by INTEGER REFERENCES users(id),
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 -- R7 (STORY-031) — user feedback on AI-generated content, fed back into the
