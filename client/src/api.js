@@ -76,6 +76,9 @@ export const api = {
   scoreAllLeads: (userId) => request('/api/leads/score-all', { method: 'POST', userId }),
   segmentAudience: (userId) => request('/api/leads/segment', { method: 'POST', userId }),
 
+  // Trust dashboard
+  trust: (userId) => request('/api/trust/dashboard', { userId }),
+
   // Session / RBAC
   me: (userId) => request('/api/me', { userId }),
 

@@ -7,6 +7,7 @@ import Social from './pages/Social.jsx';
 import Email from './pages/Email.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Audience from './pages/Audience.jsx';
+import Trust from './pages/Trust.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
           <NavLink to="/analytics">Analytics</NavLink>
           <NavLink to="/audience">Audience</NavLink>
           <NavLink to="/approvals">Approval Queue</NavLink>
+          <NavLink to="/trust">Trust</NavLink>
           <NavLink to="/audit">Audit Log</NavLink>
         </nav>
         <div className="who">
@@ -49,6 +51,7 @@ export default function App() {
           <Route path="/email" element={<Email />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/audience" element={<Audience />} />
+          <Route path="/trust" element={<Trust />} />
           <Route path="/approvals" element={<ApprovalQueue />} />
           <Route path="/audit" element={<AuditLog />} />
         </Routes>
