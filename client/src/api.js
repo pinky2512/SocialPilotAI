@@ -28,6 +28,8 @@ export const api = {
     request('/api/approvals/submit', { method: 'POST', body: { contentId }, userId }),
   publishContent: (userId, id) =>
     request(`/api/content/${id}/publish`, { method: 'POST', userId }),
+  contentFeedback: (userId, id, rating, comment) =>
+    request(`/api/content/${id}/feedback`, { method: 'POST', body: { rating, comment }, userId }),
   pendingApprovals: (userId) => request('/api/approvals/pending', { userId }),
   approve: (userId, approvalId) =>
     request(`/api/approvals/${approvalId}/approve`, { method: 'POST', userId }),

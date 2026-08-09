@@ -12,6 +12,7 @@ import { holdForApproval, approve, reject, pendingApprovals } from '../trust/app
 import { logAction } from '../trust/audit.js';
 import { notifyRole } from '../trust/notifications.js';
 import { ROLES } from '../auth/roles.js';
+import { recordFeedback } from './contentGenerationAgent.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
 import { get, run, all } from '../db/index.js';
@@ -57,6 +58,11 @@ export function decide({ approvalId, approverId, decision, reason = '' }) {
     const result = decision === 'approved'
       ? approve({ approvalId, approverId })
       : reject({ approvalId, approverId, reason });
+
+    // STORY-031 — a content rejection is an implicit negative training signal.
+    if (decision === 'rejected' && result.kind === 'content') {
+      recordFeedback({ contentId: result.target.id, userId: approverId, rating: 'down', comment: reason, source: 'implicit' });
+    }
     finishTask(taskId, 'done');
     // React/announce so the owning agent (e.g. content/post publishing) can proceed.
     broker.publish('approvalDecision', {

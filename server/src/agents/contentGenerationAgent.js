@@ -11,6 +11,7 @@ import { logAction } from '../trust/audit.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
 import { isLLMConfigured, generateDraft, activeModel } from './llm.js';
+import { all } from '../db/index.js';
 
 const AGENT_ID = 'content-generation-agent';
 
@@ -54,7 +55,8 @@ export async function generateContentAI({ creatorId, campaignId = null, prompt, 
     let draftText;
     let source;
     if (viaLLM) {
-      draftText = await generateDraft({ prompt, platform, tone });
+      // STORY-031 — feed accumulated user feedback into generation as guidance.
+      draftText = await generateDraft({ prompt, platform, tone, guidance: feedbackSummary().guidance });
       source = activeModel();
     } else {
       draftText = draftFromPrompt({ prompt, platform, tone });
@@ -153,6 +155,47 @@ export function editContent({ contentId, editorId, contentText }) {
   });
   broker.publish('contentEdited', { contentId, editorId });
   return get('SELECT * FROM content WHERE id = ?', [contentId]);
+}
+
+// --- STORY-031: user feedback -> AI learning ------------------------------
+
+/**
+ * Record user feedback on a content item. Explicit (👍/👎 from a user) or
+ * implicit (e.g. a rejection). Feedback is aggregated into guidance that shapes
+ * future generation.
+ */
+export function recordFeedback({ contentId, userId = null, rating, comment = '', source = 'explicit' }) {
+  if (!['up', 'down'].includes(rating)) throw new Error("rating must be 'up' or 'down'");
+  const content = get('SELECT id FROM content WHERE id = ?', [contentId]);
+  if (!content) throw new Error(`content ${contentId} not found`);
+  run(
+    'INSERT INTO content_feedback (content_id, user_id, rating, comment, source) VALUES (?, ?, ?, ?, ?)',
+    [contentId, userId, rating, comment, source]
+  );
+  logAction({ userId, action: 'content.feedback', details: { contentId, rating, source, comment: comment || undefined } });
+  return get('SELECT * FROM content_feedback WHERE id = ? ORDER BY id DESC', [contentId]);
+}
+
+/**
+ * Aggregate feedback into a learning summary + guidance string. The guidance is
+ * what a real learning loop would encode; here it is injected into the prompt.
+ * SWAP-IN POINT: replace this with periodic fine-tuning / preference modeling.
+ */
+export function feedbackSummary() {
+  const rows = all('SELECT rating FROM content_feedback');
+  const up = rows.filter((r) => r.rating === 'up').length;
+  const down = rows.filter((r) => r.rating === 'down').length;
+  const recentDownComments = all(
+    "SELECT comment FROM content_feedback WHERE rating = 'down' AND comment IS NOT NULL AND comment != '' ORDER BY id DESC LIMIT 3"
+  ).map((r) => r.comment);
+
+  let guidance = '';
+  if (recentDownComments.length) {
+    guidance = `Avoid issues raised in recent feedback: ${recentDownComments.join('; ')}.`;
+  } else if (down > up && down > 0) {
+    guidance = 'Recent drafts were rated poorly — be more specific and on-brand.';
+  }
+  return { up, down, total: up + down, guidance, recentDownComments };
 }
 
 /**

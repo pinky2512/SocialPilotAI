@@ -145,6 +145,18 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+-- R7 (STORY-031) — user feedback on AI-generated content, fed back into the
+-- generation process as guidance. Real fine-tuning/RLHF is the swap-in target.
+CREATE TABLE IF NOT EXISTS content_feedback (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  content_id INTEGER NOT NULL REFERENCES content(id),
+  user_id    INTEGER REFERENCES users(id),
+  rating     TEXT    NOT NULL,        -- up | down
+  comment    TEXT,
+  source     TEXT    NOT NULL DEFAULT 'explicit', -- explicit | implicit (e.g. a rejection)
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 -- R7 (STORY-030) — user notifications (e.g. "content awaiting your approval").
 CREATE TABLE IF NOT EXISTS notifications (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -135,6 +135,16 @@ function DraftCard({ item, userId, onChanged }) {
     }
   }
 
+  async function feedback(rating) {
+    setError('');
+    try {
+      const comment = rating === 'down' ? (window.prompt('What was wrong? (helps future AI drafts)') || '') : '';
+      await api.contentFeedback(userId, item.id, rating, comment);
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
   return (
     <div className="card">
       <div className="card-head">
@@ -164,6 +174,12 @@ function DraftCard({ item, userId, onChanged }) {
         )}
         {item.status === 'approved' && !editing && (
           <button className="primary" onClick={publish}>Publish</button>
+        )}
+        {!editing && (
+          <span className="fb">
+            <button className="ghost" title="Good draft" onClick={() => feedback('up')}>👍</button>
+            <button className="ghost" title="Needs work — improves future drafts" onClick={() => feedback('down')}>👎</button>
+          </span>
         )}
       </div>
     </div>

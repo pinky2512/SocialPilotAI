@@ -4,7 +4,7 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { generateContentAI, editContent, publishContent } from '../agents/contentGenerationAgent.js';
+import { generateContentAI, editContent, publishContent, recordFeedback, feedbackSummary } from '../agents/contentGenerationAgent.js';
 import { all, get } from '../db/index.js';
 
 const router = Router();
@@ -55,6 +55,22 @@ router.post('/:id/publish', requireUser, (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// STORY-031 — give feedback on content.  POST /api/content/:id/feedback { rating, comment? }
+router.post('/:id/feedback', requireUser, (req, res) => {
+  const { rating, comment } = req.body || {};
+  try {
+    recordFeedback({ contentId: Number(req.params.id), userId: req.user.id, rating, comment });
+    res.status(201).json({ ok: true, learning: feedbackSummary() });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// STORY-031 — feedback learning summary.  GET /api/content/feedback/summary
+router.get('/feedback/summary', requireUser, (_req, res) => {
+  res.json({ learning: feedbackSummary() });
 });
 
 // List content (optionally filter by status), newest first.
