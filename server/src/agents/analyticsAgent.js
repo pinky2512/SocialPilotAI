@@ -162,6 +162,21 @@ export function generatePredictiveInsights({ campaignId, actorId = null, audit =
       },
       confidence,
       trend,
+      // STORY-028 — explainability: the factors and formula behind the prediction.
+      explanation: {
+        method: 'Predicted rate = observed × w + baseline × (1 − w), where w = min(1, delivered / 200).',
+        weight: Math.round(w * 100) / 100,
+        factors: [
+          { label: 'Observed open rate', value: `${m.rates.openRate}%`, detail: `from ${delivered} delivered` },
+          { label: 'Historical baseline', value: `${baseline.openRate}%`, detail: `avg across ${baseline.sampleCampaigns} campaign(s)` },
+          { label: 'Sample weight (w)', value: `${Math.round(w * 100)}%`, detail: w >= 1 ? 'enough data — trust the observed rate' : 'small sample — blended toward baseline' },
+          { label: 'Confidence', value: confidence, detail: `${delivered} delivered` },
+        ],
+        summary:
+          `Open rate ${predictedOpenRate}% blends the observed ${m.rates.openRate}% ` +
+          `(weight ${Math.round(w * 100)}%) with the ${baseline.openRate}% baseline; ` +
+          `confidence is ${confidence} on ${delivered} delivered.`,
+      },
     };
     // STORY-023 — audit only EXPLICIT predictive requests (not dashboard polls),
     // so the trail is meaningful without flooding the audit log.

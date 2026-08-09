@@ -8,14 +8,19 @@ export default function Analytics() {
   const { userId, can } = useSession();
   const canIngest = can('analytics:ingest');
   const [metrics, setMetrics] = useState([]);
+  const [forecasts, setForecasts] = useState([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
     setError('');
     try {
-      const { metrics } = await api.emailMetrics(userId);
+      const [{ metrics }, { insights }] = await Promise.all([
+        api.emailMetrics(userId),
+        api.predictAll(userId),
+      ]);
       setMetrics(metrics);
+      setForecasts(insights);
     } catch (e) {
       setError(e.message);
     }
@@ -51,6 +56,7 @@ export default function Analytics() {
   }
 
   return (
+    <div>
     <section className="panel">
       <div className="card-head">
         <h2>Email engagement analytics</h2>
@@ -88,6 +94,42 @@ export default function Analytics() {
         </div>
       ))}
     </section>
+
+    <section className="panel">
+      <h2>Predictive forecast &amp; explainability</h2>
+      <p className="hint">Each forecast explains itself — the factors and formula behind the number.</p>
+      {forecasts.length === 0 && <p className="hint">No campaigns to forecast yet.</p>}
+      {forecasts.map((f) => (
+        <div className="metric-block" key={f.campaignId}>
+          <div className="card-head">
+            <h3>{f.name}</h3>
+            <span className={`status status-${f.confidence === 'high' ? 'approved' : f.confidence === 'medium' ? 'pending_approval' : 'draft'}`} style={{ fontSize: 12 }}>
+              {f.confidence} confidence
+            </span>
+          </div>
+          <div className="kpis">
+            <Kpi label="Predicted open %" value={`${f.predicted.openRate}%`} />
+            <Kpi label="Predicted click %" value={`${f.predicted.clickRate}%`} />
+            <Kpi label="Projected opens" value={f.projected.opens} />
+            <Kpi label="Trend" value={f.trend.replace('-', ' ')} />
+          </div>
+          <details className="explain">
+            <summary>Why this prediction?</summary>
+            <p className="hint">{f.explanation.summary}</p>
+            <p className="hint"><em>{f.explanation.method}</em></p>
+            <table className="audit">
+              <thead><tr><th>Factor</th><th>Value</th><th>Detail</th></tr></thead>
+              <tbody>
+                {f.explanation.factors.map((x, i) => (
+                  <tr key={i}><td>{x.label}</td><td>{x.value}</td><td className="muted">{x.detail}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        </div>
+      ))}
+    </section>
+    </div>
   );
 }
 

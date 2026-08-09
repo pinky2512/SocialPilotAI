@@ -88,6 +88,10 @@ button.ghost { background: transparent; }
 .channel-list { list-style: none; padding: 0; margin: 0; font-size: 13px; }
 .channel-list li { display: flex; justify-content: space-between; padding: 3px 0; text-transform: capitalize; }
 
+.explain { margin-top: 10px; }
+.explain summary { cursor: pointer; color: var(--accent); font-size: 13px; user-select: none; }
+.explain summary:hover { color: var(--accent-2); }
+
 .rec-list { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 10px; }
 .rec-list li { border-left: 3px solid var(--line); padding-left: 12px; }
 
