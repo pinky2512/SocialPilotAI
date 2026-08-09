@@ -1,28 +1,39 @@
-// Real LLM integration for content generation (Claude via the official SDK).
+// Real LLM integration for content generation — provider-pluggable.
 //
 // This is the concrete implementation of the swap-in point documented in
 // contentGenerationAgent.js. Contract:
 //   input:  { prompt: string, platform: string, tone: string }
 //   output: string   // the generated draft body
 //
-// Enabled only when ANTHROPIC_API_KEY is set (the SDK reads it from the env, or
-// from an `ant auth login` profile). When absent, callers fall back to the
-// template generator so the app still runs and tests stay hermetic.
+// Provider is selected by LLM_PROVIDER (default 'anthropic'):
+//   - anthropic : Claude via the official SDK (ANTHROPIC_API_KEY, CONTENT_MODEL)
+//   - openai    : any OpenAI-compatible /chat/completions endpoint
+//                 (OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL) — works with
+//                 OpenAI, OpenRouter, Groq, Mistral, Together, Ollama, etc.
+//
+// When the selected provider has no key, callers fall back to the template
+// generator so the app still runs and tests stay hermetic.
 
 import Anthropic from '@anthropic-ai/sdk';
 
-// Default to the current, most capable Claude model. Override with CONTENT_MODEL.
-const MODEL = process.env.CONTENT_MODEL || 'claude-opus-5';
+const PROVIDER = (process.env.LLM_PROVIDER || 'anthropic').toLowerCase();
 
-let _client;
-function client() {
-  if (!_client) _client = new Anthropic(); // resolves ANTHROPIC_API_KEY from env
-  return _client;
+// --- Anthropic (default) ---------------------------------------------------
+const ANTHROPIC_MODEL = process.env.CONTENT_MODEL || 'claude-opus-5';
+
+// --- OpenAI-compatible -----------------------------------------------------
+const OPENAI_BASE_URL = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+
+/** True when the selected provider has credentials configured. */
+export function isLLMConfigured() {
+  if (PROVIDER === 'openai') return Boolean(process.env.OPENAI_API_KEY);
+  return Boolean(process.env.ANTHROPIC_API_KEY);
 }
 
-/** True when a real LLM is configured. */
-export function isLLMConfigured() {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+/** Label recorded as the audit "source" for generated content. */
+export function activeModel() {
+  return PROVIDER === 'openai' ? `openai:${OPENAI_MODEL}` : ANTHROPIC_MODEL;
 }
 
 const PLATFORM_HINTS = {
@@ -33,41 +44,64 @@ const PLATFORM_HINTS = {
   generic: 'Clear, engaging marketing copy.',
 };
 
-/**
- * Generate a content draft with Claude.
- * @returns {Promise<string>} the draft body (text only).
- */
-export async function generateDraftWithClaude({ prompt, platform = 'generic', tone = 'professional' }) {
+function buildPrompt({ prompt, platform, tone }) {
   const hint = PLATFORM_HINTS[platform] || PLATFORM_HINTS.generic;
   const system =
     'You are a marketing copywriter for Social Pilot AI. Write a single, ready-to-post ' +
-    'social media post based on the user\'s brief. Return ONLY the post text — no preamble, ' +
+    "social media post based on the user's brief. Return ONLY the post text — no preamble, " +
     'no explanations, no surrounding quotes.';
-
-  const res = await client().messages.create({
-    model: MODEL,
-    max_tokens: 1024,
-    // Content drafting is a short, well-scoped task — low effort keeps it fast and cheap.
-    output_config: { effort: 'low' },
-    system,
-    messages: [
-      {
-        role: 'user',
-        content:
-          `Platform: ${platform}\nTone: ${tone}\n${hint}\n\n` +
-          `Write the post about: ${prompt}`,
-      },
-    ],
-  });
-
-  const text = res.content
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
-
-  if (!text) throw new Error('LLM returned no text content');
-  return text;
+  const user = `Platform: ${platform}\nTone: ${tone}\n${hint}\n\nWrite the post about: ${prompt}`;
+  return { system, user };
 }
 
-export const CONTENT_MODEL = MODEL;
+/**
+ * Generate a content draft using the configured provider.
+ * @returns {Promise<string>} the draft body (text only).
+ */
+export async function generateDraft({ prompt, platform = 'generic', tone = 'professional' }) {
+  const parts = buildPrompt({ prompt, platform, tone });
+  const text = PROVIDER === 'openai'
+    ? await generateWithOpenAI(parts)
+    : await generateWithClaude(parts);
+  if (!text || !text.trim()) throw new Error('LLM returned no text content');
+  return text.trim();
+}
+
+// --- provider implementations ---------------------------------------------
+
+let _anthropic;
+async function generateWithClaude({ system, user }) {
+  if (!_anthropic) _anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY
+  const res = await _anthropic.messages.create({
+    model: ANTHROPIC_MODEL,
+    max_tokens: 1024,
+    output_config: { effort: 'low' }, // short task — keep it fast and cheap
+    system,
+    messages: [{ role: 'user', content: user }],
+  });
+  return res.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+}
+
+async function generateWithOpenAI({ system, user }) {
+  const res = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      max_tokens: 1024,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`OpenAI-compatible API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content || '';
+}

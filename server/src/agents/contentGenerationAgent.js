@@ -10,7 +10,7 @@ import { run, get } from '../db/index.js';
 import { logAction } from '../trust/audit.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
-import { isLLMConfigured, generateDraftWithClaude, CONTENT_MODEL } from './llm.js';
+import { isLLMConfigured, generateDraft, activeModel } from './llm.js';
 
 const AGENT_ID = 'content-generation-agent';
 
@@ -54,8 +54,8 @@ export async function generateContentAI({ creatorId, campaignId = null, prompt, 
     let draftText;
     let source;
     if (viaLLM) {
-      draftText = await generateDraftWithClaude({ prompt, platform, tone });
-      source = CONTENT_MODEL;
+      draftText = await generateDraft({ prompt, platform, tone });
+      source = activeModel();
     } else {
       draftText = draftFromPrompt({ prompt, platform, tone });
       source = 'template';

@@ -44,7 +44,7 @@ export function seed() {
 }
 
 // Run when invoked directly (cross-platform path/URL comparison).
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const result = seed();
   // eslint-disable-next-line no-console
   console.log(`Seeded ${result.users} users and sample campaign.`);
