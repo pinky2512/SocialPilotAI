@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import { useSession } from './session.jsx';
+import { api } from './api.js';
+import Notifications from './pages/Notifications.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import ContentStudio from './pages/ContentStudio.jsx';
 import ApprovalQueue from './pages/ApprovalQueue.jsx';
@@ -11,7 +14,19 @@ import Trust from './pages/Trust.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 
 export default function App() {
-  const { user, users, setUserId } = useSession();
+  const { user, users, setUserId, userId } = useSession();
+  const [unread, setUnread] = useState(0);
+
+  // STORY-030 — poll the acting user's unread notification count.
+  useEffect(() => {
+    let alive = true;
+    const load = () => api.notifications(userId, true)
+      .then((r) => alive && setUnread(r.unread))
+      .catch(() => {});
+    load();
+    const t = setInterval(load, 8000);
+    return () => { alive = false; clearInterval(t); };
+  }, [userId]);
 
   return (
     <div className="app">
@@ -30,6 +45,9 @@ export default function App() {
           <NavLink to="/trust">Trust</NavLink>
           <NavLink to="/audit">Audit Log</NavLink>
         </nav>
+        <NavLink to="/notifications" className="bell" title="Notifications">
+          🔔{unread > 0 && <span className="badge">{unread}</span>}
+        </NavLink>
         <div className="who">
           <label>Acting as&nbsp;</label>
           <select value={user.id} onChange={(e) => setUserId(Number(e.target.value))}>
@@ -54,6 +72,7 @@ export default function App() {
           <Route path="/trust" element={<Trust />} />
           <Route path="/approvals" element={<ApprovalQueue />} />
           <Route path="/audit" element={<AuditLog />} />
+          <Route path="/notifications" element={<Notifications />} />
         </Routes>
       </main>
 

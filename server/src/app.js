@@ -11,6 +11,7 @@ import analyticsRoutes from './routes/analytics.js';
 import recommendationRoutes from './routes/recommendations.js';
 import leadRoutes from './routes/leads.js';
 import trustRoutes from './routes/trust.js';
+import notificationRoutes from './routes/notifications.js';
 import auditRoutes from './routes/audit.js';
 import { requireUser } from './http/currentUser.js';
 import { getPermissions } from './agents/securityAgent.js';
@@ -68,6 +69,7 @@ export function createApp() {
   app.use('/api/recommendations', recommendationRoutes);
   app.use('/api/leads', leadRoutes);
   app.use('/api/trust', trustRoutes);
+  app.use('/api/notifications', notificationRoutes);
   app.use('/api/audit', auditRoutes);
 
   // JSON 404 for unknown API routes (instead of HTML "Cannot GET").

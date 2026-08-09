@@ -10,6 +10,8 @@
 
 import { holdForApproval, approve, reject, pendingApprovals } from '../trust/approvals.js';
 import { logAction } from '../trust/audit.js';
+import { notifyRole } from '../trust/notifications.js';
+import { ROLES } from '../auth/roles.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
 import { get, run, all } from '../db/index.js';
@@ -29,6 +31,13 @@ export function submitForApproval({ contentId, requestedBy }) {
       throw new Error(`content ${contentId} is '${content.status}', only drafts can be submitted`);
     }
     const approval = holdForApproval({ contentId, requestedBy });
+    // STORY-030 — notify the approvers (administrators) that content is waiting.
+    notifyRole(ROLES.ADMINISTRATOR, {
+      type: 'content_approval_pending',
+      message: `Content #${contentId} is awaiting your approval.`,
+      entityType: 'content',
+      entityId: contentId,
+    });
     finishTask(taskId, 'done');
     broker.publish('contentApproval', { contentId, approvalId: approval.id, event: 'submitted' });
     return approval;

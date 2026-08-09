@@ -170,6 +170,10 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-026 Governance Score for Predictive Analytics — live 0–100 score from % audited · % approvals honored · analytics failure rate, with fix recommendations below a 70 threshold; shown as a score panel with meters on the Dashboard. (TBI control #5.)
 - ✅ STORY-027 Role-Based Access Control for Analytics Features — analytics routes gated by a method-aware guard: reads require `analytics:view` (both roles), writing engagement telemetry requires `analytics:ingest` (Administrator only); manager writes return 403 and are audited. UI hides the ingest action for non-admins. **Completes R6.**
 
-**R7** — ⬜ STORY-028…031
+**R7**
+- ✅ STORY-028 Explainability for Predictive Analytics — every forecast carries an explanation (method/formula, blend weight, factors, summary); expandable "Why this prediction?" in the UI.
+- ✅ STORY-029 Human Approval Gates for AI-Generated Content — content records its source (LLM/template/human); `publishContent` is approved-only, so AI content can't go live without a human approval. Resilient additive migrations.
+- ✅ STORY-030 Notify Users of Pending Content Approvals — submitting content notifies the approver(s); per-user inbox with unread count + a top-bar bell.
+- ⬜ STORY-031 Incorporate User Feedback into AI Learning
 **R8** — ⬜ STORY-032…035
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

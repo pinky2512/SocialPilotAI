@@ -82,6 +82,14 @@ export const api = {
   // Trust dashboard
   trust: (userId) => request('/api/trust/dashboard', { userId }),
 
+  // Notifications
+  notifications: (userId, unreadOnly) =>
+    request(`/api/notifications${unreadOnly ? '?unread=1' : ''}`, { userId }),
+  markNotificationRead: (userId, id) =>
+    request(`/api/notifications/${id}/read`, { method: 'POST', userId }),
+  markAllNotificationsRead: (userId) =>
+    request('/api/notifications/read-all', { method: 'POST', userId }),
+
   // Session / RBAC
   me: (userId) => request('/api/me', { userId }),
 
