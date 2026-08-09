@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { proposeRecommendation, listRecommendations } from '../agents/governanceAgent.js';
+import { proposeRecommendation, listRecommendations, predictiveGovernanceScore } from '../agents/governanceAgent.js';
 
 const router = Router();
 
@@ -27,6 +27,12 @@ router.post('/propose', requireUser, (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// STORY-026 — governance score for predictive analytics.
+// GET /api/recommendations/governance-score
+router.get('/governance-score', requireUser, (_req, res) => {
+  res.json({ governance: predictiveGovernanceScore() });
 });
 
 // List proposed/decided recommendations.  GET /api/recommendations?status=approved

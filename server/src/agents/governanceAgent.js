@@ -131,6 +131,58 @@ export function proposeRecommendation({ campaignId = null, type, message, ration
   }
 }
 
+/**
+ * STORY-026 — Governance Score for Predictive Analytics (TBI control #5).
+ * Live 0–100 score from three governance signals for the predictive-analytics
+ * domain, with fix recommendations when it drops below threshold:
+ *   - % audited          : proposed recommendations that have an audit entry
+ *   - % approvals honored : proposed recommendations that were actually decided
+ *   - failure rate        : analytics-agent task failures (inverted into score)
+ */
+export function predictiveGovernanceScore() {
+  const recs = all('SELECT * FROM predictive_recommendations');
+  const total = recs.length;
+  const decided = recs.filter((r) => r.status === 'approved' || r.status === 'rejected').length;
+  const pending = total - decided;
+
+  const auditedCount = all(
+    "SELECT COUNT(DISTINCT json_extract(details, '$.recommendationId')) AS n FROM audit_log WHERE action = 'recommendation.proposed'"
+  )[0].n;
+
+  const at = all("SELECT status, COUNT(*) AS n FROM ai_agent_tasks WHERE agent_id = 'analytics-agent' GROUP BY status");
+  const byStatus = Object.fromEntries(at.map((r) => [r.status, r.n]));
+  const analyticsTotal = Object.values(byStatus).reduce((a, b) => a + b, 0);
+  const analyticsFailed = byStatus.failed || 0;
+
+  const pct = (n, d) => (d > 0 ? Math.round((n / d) * 1000) / 10 : 100);
+  const auditedPct = pct(auditedCount, total);
+  const honoredPct = pct(decided, total);
+  const failureRate = analyticsTotal ? Math.round((analyticsFailed / analyticsTotal) * 1000) / 10 : 0;
+
+  // Weighted score: audit + honored gates matter most; failures penalize.
+  const score = Math.round(0.4 * auditedPct + 0.4 * honoredPct + 0.2 * (100 - failureRate));
+  const THRESHOLD = 70;
+
+  const recommendations = [];
+  if (auditedPct < 100) {
+    recommendations.push('Some predictive recommendations are missing audit entries — ensure every proposal is logged.');
+  }
+  if (honoredPct < 80 && pending > 0) {
+    recommendations.push(`${pending} proposed recommendation(s) await a human decision — review the approval queue.`);
+  }
+  if (failureRate > 10) {
+    recommendations.push('Analytics-agent task failures are elevated — investigate failed tasks on the Trust dashboard.');
+  }
+
+  return {
+    score,
+    status: score >= THRESHOLD ? 'good' : 'below_threshold',
+    threshold: THRESHOLD,
+    metrics: { auditedPct, honoredPct, failureRate, totalRecommendations: total, decided, pending },
+    recommendations,
+  };
+}
+
 export function listRecommendations({ status } = {}) {
   return status
     ? all('SELECT * FROM predictive_recommendations WHERE status = ? ORDER BY id DESC', [status])

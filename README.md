@@ -167,7 +167,8 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 **R6**
 - ✅ STORY-024 Approval Gate for Predictive Recommendations — a generated recommendation can be *proposed for adoption*; it is persisted and HELD at the approval gate (`kind=recommendation` in the unified queue) and only reaches `approved` after a human decision. Dashboard "Propose for approval" button; nothing is auto-adopted.
 - ✅ STORY-025 Trust Dashboard for System Health Monitoring — Trust & Governance Coordinator's `monitorSystemHealth` snapshot (health status + task failure rate, pending approvals, recent actions, and anomalies: failed tasks / access denials / integration + broker errors); live-polling **Trust** page. (TBI control #4.)
-- ⬜ STORY-026 Governance Score · ⬜ STORY-027 Analytics RBAC
+- ✅ STORY-026 Governance Score for Predictive Analytics — live 0–100 score from % audited · % approvals honored · analytics failure rate, with fix recommendations below a 70 threshold; shown as a score panel with meters on the Dashboard. (TBI control #5.)
+- ⬜ STORY-027 Analytics RBAC
 
 **R7** — ⬜ STORY-028…031
 **R8** — ⬜ STORY-032…035

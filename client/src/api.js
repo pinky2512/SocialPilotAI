@@ -66,6 +66,7 @@ export const api = {
   recommendations: (userId) => request('/api/analytics/recommendations', { userId }),
   proposeRecommendation: (userId, payload) =>
     request('/api/recommendations/propose', { method: 'POST', body: payload, userId }),
+  governanceScore: (userId) => request('/api/recommendations/governance-score', { userId }),
   emailMetrics: (userId) => request('/api/analytics/email/metrics', { userId }),
   campaignMetrics: (userId, id) => request(`/api/analytics/email/${id}/metrics`, { userId }),
   ingestEngagement: (userId, events) =>
