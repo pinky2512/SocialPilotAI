@@ -83,7 +83,8 @@ client/                     React frontend (Vite)
 ```bash
 cd server
 npm install
-npm run seed     # creates 5 role users (password: password123) + a sample campaign
+npm run seed     # creates 2 role users (password: password123) + a sample campaign
+                 #   Casey Manager (campaign_manager) · Alex Admin (administrator)
 npm start        # http://localhost:4000
 npm test         # runs the per-story acceptance tests
 ```

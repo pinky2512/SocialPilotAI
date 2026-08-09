@@ -29,7 +29,7 @@ beforeEach(() => {
 });
 
 function makeDraft() {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']);
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']);
   return agent.generateContent({ creatorId: creator.id, prompt: 'Original idea' });
 }
 
@@ -58,7 +58,7 @@ test('editing a submitted draft resets it to draft (re-approval required)', () =
 
 test('approved content cannot be edited', () => {
   const draft = makeDraft();
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']);
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']);
   const approval = gov.submitForApproval({ contentId: draft.id, requestedBy: draft.creator_id });
   gov.decide({ approvalId: approval.id, approverId: approver.id, decision: 'approved' });
 

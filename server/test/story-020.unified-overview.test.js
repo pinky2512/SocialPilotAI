@@ -29,7 +29,7 @@ beforeEach(() => {
 });
 
 test('overview spans all channels with totals and status breakdowns', () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']).id;
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
   const manager = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
 
   const c = content.generateContent({ creatorId: creator, prompt: 'Hello' });
@@ -51,7 +51,7 @@ test('overview spans all channels with totals and status breakdowns', () => {
 });
 
 test('overview surfaces pending approvals count', () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']).id;
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
   const c = content.generateContent({ creatorId: creator, prompt: 'x' });
   gov.submitForApproval({ contentId: c.id, requestedBy: creator });
   const o = analytics.unifiedOverview();

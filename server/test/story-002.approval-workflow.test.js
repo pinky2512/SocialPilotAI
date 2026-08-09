@@ -29,7 +29,7 @@ beforeEach(() => {
 });
 
 function makeDraft() {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']);
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']);
   return generateContent({ creatorId: creator.id, prompt: 'A campaign post' });
 }
 
@@ -44,7 +44,7 @@ test('submitting a draft holds it for approval', () => {
 
 test('approve advances content to approved and records the decision', () => {
   const draft = makeDraft();
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']);
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']);
   const approval = gov.submitForApproval({ contentId: draft.id, requestedBy: draft.creator_id });
 
   const result = gov.decide({ approvalId: approval.id, approverId: approver.id, decision: 'approved' });
@@ -58,7 +58,7 @@ test('approve advances content to approved and records the decision', () => {
 
 test('reject moves content to rejected', () => {
   const draft = makeDraft();
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']);
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']);
   const approval = gov.submitForApproval({ contentId: draft.id, requestedBy: draft.creator_id });
 
   const result = gov.decide({ approvalId: approval.id, approverId: approver.id, decision: 'rejected', reason: 'off-brand' });
@@ -68,7 +68,7 @@ test('reject moves content to rejected', () => {
 
 test('a decided approval cannot be decided again', () => {
   const draft = makeDraft();
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']);
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']);
   const approval = gov.submitForApproval({ contentId: draft.id, requestedBy: draft.creator_id });
   gov.decide({ approvalId: approval.id, approverId: approver.id, decision: 'approved' });
 
@@ -80,7 +80,7 @@ test('a decided approval cannot be decided again', () => {
 
 test('only drafts (or previously rejected) can be submitted', () => {
   const draft = makeDraft();
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']);
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']);
   const approval = gov.submitForApproval({ contentId: draft.id, requestedBy: draft.creator_id });
   gov.decide({ approvalId: approval.id, approverId: approver.id, decision: 'approved' });
 
@@ -94,7 +94,7 @@ test('pending queue lists held items only', () => {
   gov.submitForApproval({ contentId: d1.id, requestedBy: d1.creator_id });
   gov.submitForApproval({ contentId: d2.id, requestedBy: d2.creator_id });
 
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']);
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']);
   const pending1 = gov.listPending();
   assert.equal(pending1.length, 2);
 

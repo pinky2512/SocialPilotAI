@@ -44,7 +44,7 @@ test('a not-yet-approved post cannot be published', () => {
 
 test('an approved post publishes and is fully logged', () => {
   const { post } = scheduledPost();
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']).id;
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']).id;
   const gate = get("SELECT id FROM approval_processes WHERE post_id = ?", [post.id]);
   gov.decide({ approvalId: gate.id, approverId: approver, decision: 'approved' });
 
@@ -58,7 +58,7 @@ test('an approved post publishes and is fully logged', () => {
 
 test('publishDuePosts publishes only approved due posts', () => {
   const manager = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']).id;
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']).id;
   const content = agent.generateContent({ creatorId: manager, prompt: 'Multi launch' });
   const tw = social.connectAccount({ userId: manager, platform: 'twitter', handle: '@b' });
   const li = social.connectAccount({ userId: manager, platform: 'linkedin', handle: 'BP' });
@@ -78,7 +78,7 @@ test('publishDuePosts publishes only approved due posts', () => {
 
 test('future-scheduled approved posts are not published early', () => {
   const manager = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']).id;
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']).id;
   const content = agent.generateContent({ creatorId: manager, prompt: 'Future post' });
   const acct = social.connectAccount({ userId: manager, platform: 'twitter', handle: '@f' });
   const [post] = social.schedulePost({ userId: manager, contentId: content.id, accountIds: [acct.id], scheduledAt: '2999-01-01T00:00:00Z' });

@@ -27,7 +27,7 @@ beforeEach(() => {
 });
 
 test('generateContent creates a draft (not published) from a prompt', () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']);
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']);
   const content = generateContent({
     creatorId: creator.id,
     prompt: 'Announce our new analytics dashboard',
@@ -41,7 +41,7 @@ test('generateContent creates a draft (not published) from a prompt', () => {
 });
 
 test('generateContent writes an append-only audit entry', () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']);
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']);
   const content = generateContent({ creatorId: creator.id, prompt: 'New feature launch' });
 
   const entries = all(
@@ -54,7 +54,7 @@ test('generateContent writes an append-only audit entry', () => {
 });
 
 test('generateContent records a completed ai_agent_task', () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']);
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']);
   generateContent({ creatorId: creator.id, prompt: 'Weekly tips thread' });
 
   const task = get(
@@ -65,12 +65,12 @@ test('generateContent records a completed ai_agent_task', () => {
 });
 
 test('generateContent rejects an empty prompt', () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']);
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']);
   assert.throws(() => generateContent({ creatorId: creator.id, prompt: '   ' }));
 });
 
 test('audit_log cannot be updated or deleted (append-only enforcement)', () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']);
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']);
   generateContent({ creatorId: creator.id, prompt: 'Test' });
   assert.throws(() => db.run("UPDATE audit_log SET action = 'x' WHERE id = 1"), /append-only/);
   assert.throws(() => db.run('DELETE FROM audit_log WHERE id = 1'), /append-only/);

@@ -29,7 +29,7 @@ beforeEach(() => {
 
 function scheduled() {
   const manager = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
-  const approver = get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']).id;
+  const approver = get('SELECT id FROM users WHERE role = ?', ['administrator']).id;
   const content = agent.generateContent({ creatorId: manager, prompt: 'Governed post' });
   const acct = social.connectAccount({ userId: manager, platform: 'twitter', handle: '@b' });
   const [post] = social.schedulePost({ userId: manager, contentId: content.id, accountIds: [acct.id] });

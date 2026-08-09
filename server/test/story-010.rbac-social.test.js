@@ -1,11 +1,15 @@
 // STORY-010 — Role-Based Access Control for Social Media Features.
 //
+// Two-role model:
+//   - campaign_manager: create/connect/schedule/view — but NOT publish/approve.
+//   - administrator: full access (wildcard).
+//
 // Acceptance:
 //  - The permission matrix grants social permissions per role.
 //  - Denied attempts are recorded in the append-only audit log (access.denied).
 //  - HTTP routes enforce RBAC: 403 for a role lacking the permission, success
 //    for a role that has it.
-//  - platform_admin (wildcard) can do everything.
+//  - administrator (wildcard) can do everything.
 
 import { test, before, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -45,23 +49,23 @@ async function http(app, { method = 'GET', path, userId, body }) {
   return { status: res.status, json };
 }
 
-test('permission matrix: content_creator can schedule but not connect/publish', () => {
-  assert.equal(can('content_creator', PERMISSIONS.SOCIAL_SCHEDULE), true);
-  assert.equal(can('content_creator', PERMISSIONS.SOCIAL_CONNECT), false);
-  assert.equal(can('content_creator', PERMISSIONS.SOCIAL_PUBLISH), false);
+test('permission matrix: campaign_manager can connect/schedule but not publish/approve', () => {
+  assert.equal(can('campaign_manager', PERMISSIONS.SOCIAL_CONNECT), true);
+  assert.equal(can('campaign_manager', PERMISSIONS.SOCIAL_SCHEDULE), true);
+  assert.equal(can('campaign_manager', PERMISSIONS.SOCIAL_PUBLISH), false);
+  assert.equal(can('campaign_manager', PERMISSIONS.SOCIAL_APPROVE), false);
 });
 
-test('platform_admin wildcard grants every social permission', () => {
-  assert.equal(can('platform_admin', PERMISSIONS.SOCIAL_CONNECT), true);
-  assert.equal(can('platform_admin', PERMISSIONS.SOCIAL_PUBLISH), true);
-  assert.equal(can('platform_admin', PERMISSIONS.SOCIAL_APPROVE), true);
+test('administrator wildcard grants every social permission', () => {
+  assert.equal(can('administrator', PERMISSIONS.SOCIAL_CONNECT), true);
+  assert.equal(can('administrator', PERMISSIONS.SOCIAL_PUBLISH), true);
+  assert.equal(can('administrator', PERMISSIONS.SOCIAL_APPROVE), true);
 });
 
-test('route enforces RBAC: content_creator is forbidden from connecting accounts', async () => {
+test('route enforces RBAC: campaign_manager is forbidden from publishing', async () => {
   const app = createApp();
   const res = await http(app, {
-    method: 'POST', path: '/api/social/accounts', userId: idFor('content_creator'),
-    body: { platform: 'twitter', handle: '@x' },
+    method: 'POST', path: '/api/social/publish-due', userId: idFor('campaign_manager'),
   });
   assert.equal(res.status, 403);
   assert.match(res.json.error, /forbidden/);
@@ -70,12 +74,11 @@ test('route enforces RBAC: content_creator is forbidden from connecting accounts
 test('a denied attempt is audited as access.denied', async () => {
   const app = createApp();
   await http(app, {
-    method: 'POST', path: '/api/social/accounts', userId: idFor('data_analyst'),
-    body: { platform: 'twitter', handle: '@x' },
+    method: 'POST', path: '/api/social/publish-due', userId: idFor('campaign_manager'),
   });
   const denied = get("SELECT * FROM audit_log WHERE action = 'access.denied' ORDER BY id DESC LIMIT 1");
   assert.ok(denied, 'denial must be recorded');
-  assert.equal(JSON.parse(denied.details).permission, 'social:connect');
+  assert.equal(JSON.parse(denied.details).permission, 'social:publish');
 });
 
 test('route allows RBAC: campaign_manager can connect an account', async () => {
@@ -88,18 +91,18 @@ test('route allows RBAC: campaign_manager can connect an account', async () => {
   assert.equal(res.json.account.platform, 'twitter');
 });
 
-test('publish is forbidden for content_creator but allowed for campaign_manager', async () => {
+test('publish is forbidden for campaign_manager but allowed for administrator', async () => {
   const app = createApp();
-  const creator = await http(app, { method: 'POST', path: '/api/social/publish-due', userId: idFor('content_creator') });
-  assert.equal(creator.status, 403);
   const manager = await http(app, { method: 'POST', path: '/api/social/publish-due', userId: idFor('campaign_manager') });
-  assert.equal(manager.status, 200);
+  assert.equal(manager.status, 403);
+  const admin = await http(app, { method: 'POST', path: '/api/social/publish-due', userId: idFor('administrator') });
+  assert.equal(admin.status, 200);
 });
 
 test('GET /api/me returns the acting role permissions', async () => {
   const app = createApp();
-  const res = await http(app, { path: '/api/me', userId: idFor('data_analyst') });
+  const res = await http(app, { path: '/api/me', userId: idFor('campaign_manager') });
   assert.equal(res.status, 200);
-  assert.ok(res.json.permissions.includes('social:view'));
-  assert.ok(!res.json.permissions.includes('social:connect'), 'analyst cannot connect');
+  assert.ok(res.json.permissions.includes('social:connect'));
+  assert.ok(!res.json.permissions.includes('social:publish'), 'manager cannot publish');
 });

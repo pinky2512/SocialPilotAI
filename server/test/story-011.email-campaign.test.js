@@ -27,7 +27,7 @@ beforeEach(() => {
 });
 
 const manager = () => get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
-const leader = () => get('SELECT id FROM users WHERE role = ?', ['marketing_leadership']).id;
+const leader = () => get('SELECT id FROM users WHERE role = ?', ['administrator']).id;
 
 function draftCampaign() {
   return email.createEmailCampaign({

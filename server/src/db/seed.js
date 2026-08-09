@@ -10,11 +10,8 @@ import { ROLES } from '../auth/roles.js';
 import { hashPassword } from '../auth/password.js';
 
 const USERS = [
-  { name: 'Casey Manager',   role: ROLES.CAMPAIGN_MANAGER,     email: 'manager@socialpilot.ai' },
-  { name: 'Riley Creator',   role: ROLES.CONTENT_CREATOR,      email: 'creator@socialpilot.ai' },
-  { name: 'Dana Analyst',    role: ROLES.DATA_ANALYST,         email: 'analyst@socialpilot.ai' },
-  { name: 'Morgan Leader',   role: ROLES.MARKETING_LEADERSHIP, email: 'leader@socialpilot.ai' },
-  { name: 'Alex Admin',      role: ROLES.PLATFORM_ADMIN,       email: 'admin@socialpilot.ai' },
+  { name: 'Casey Manager', role: ROLES.CAMPAIGN_MANAGER, email: 'manager@socialpilot.ai' },
+  { name: 'Alex Admin',    role: ROLES.ADMINISTRATOR,    email: 'admin@socialpilot.ai' },
 ];
 
 export function seed() {

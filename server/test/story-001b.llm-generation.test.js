@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 
 test('generateContentAI (template fallback) creates an audited draft', async () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']).id;
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
   const content = await agent.generateContentAI({
     creatorId: creator,
     prompt: 'Launch our new feature',
@@ -41,6 +41,6 @@ test('generateContentAI (template fallback) creates an audited draft', async () 
 });
 
 test('generateContentAI rejects an empty prompt', async () => {
-  const creator = get('SELECT id FROM users WHERE role = ?', ['content_creator']).id;
+  const creator = get('SELECT id FROM users WHERE role = ?', ['campaign_manager']).id;
   await assert.rejects(() => agent.generateContentAI({ creatorId: creator, prompt: '  ', useLLM: false }));
 });
