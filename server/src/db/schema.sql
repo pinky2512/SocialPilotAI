@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS content (
   content_text TEXT    NOT NULL,
   -- lifecycle: draft -> pending_approval -> approved | rejected -> published
   status       TEXT    NOT NULL DEFAULT 'draft',
+  -- STORY-029: what produced this draft (LLM model id, 'template', or 'human').
+  source       TEXT,
   created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 

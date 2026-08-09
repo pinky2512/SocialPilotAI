@@ -70,8 +70,8 @@ export async function generateContentAI({ creatorId, campaignId = null, prompt, 
 /** Shared persistence: insert draft, audit, close the task, announce. */
 function persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone, taskId, source }) {
   const info = run(
-    "INSERT INTO content (campaign_id, creator_id, content_text, status) VALUES (?, ?, ?, 'draft')",
-    [campaignId, creatorId, draftText]
+    "INSERT INTO content (campaign_id, creator_id, content_text, status, source) VALUES (?, ?, ?, 'draft', ?)",
+    [campaignId, creatorId, draftText, source]
   );
   const content = get('SELECT * FROM content WHERE id = ?', [info.lastInsertRowid]);
 
@@ -86,6 +86,30 @@ function persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone
   // published here — publishing requires passing the human approval gate.
   broker.publish('contentGenerated', { contentId: content.id, creatorId, campaignId });
   return content;
+}
+
+/**
+ * STORY-029 — publish approved content (approved -> published).
+ *
+ * Human-approval-gate enforcement for AI-generated content: content can ONLY be
+ * published from status 'approved' (i.e. it passed the STORY-002 approval gate).
+ * Any other status is refused, so AI-generated content can never go live without
+ * a human having approved it. Records who published and the content's source.
+ */
+export function publishContent({ contentId, userId = null }) {
+  const content = get('SELECT * FROM content WHERE id = ?', [contentId]);
+  if (!content) throw new Error(`content ${contentId} not found`);
+  if (content.status !== 'approved') {
+    throw new Error(`content ${contentId} is '${content.status}' — only approved content can be published`);
+  }
+  run("UPDATE content SET status = 'published' WHERE id = ?", [contentId]);
+  logAction({
+    userId,
+    action: 'content.published',
+    details: { contentId, source: content.source, creatorId: content.creator_id },
+  });
+  broker.publish('contentPublished', { contentId });
+  return get('SELECT * FROM content WHERE id = ?', [contentId]);
 }
 
 /**

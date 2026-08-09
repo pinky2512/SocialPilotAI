@@ -4,7 +4,7 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { generateContentAI, editContent } from '../agents/contentGenerationAgent.js';
+import { generateContentAI, editContent, publishContent } from '../agents/contentGenerationAgent.js';
 import { all, get } from '../db/index.js';
 
 const router = Router();
@@ -40,6 +40,17 @@ router.patch('/:id', requireUser, (req, res) => {
       editorId: req.user.id,
       contentText,
     });
+    res.json({ content });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// STORY-029 — publish approved content (gate-enforced).
+// POST /api/content/:id/publish
+router.post('/:id/publish', requireUser, (req, res) => {
+  try {
+    const content = publishContent({ contentId: Number(req.params.id), userId: req.user.id });
     res.json({ content });
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -34,6 +34,22 @@ export function getDb() {
 function initSchema() {
   const schema = readFileSync(join(__dirname, 'schema.sql'), 'utf8');
   db.exec(schema);
+  runMigrations();
+}
+
+// Additive column migrations. `CREATE TABLE IF NOT EXISTS` does not add columns
+// to a pre-existing table, so columns introduced after a table's first creation
+// are applied here. Each ADD COLUMN is idempotent (ignored if it already exists).
+function runMigrations() {
+  const additions = [
+    'ALTER TABLE content ADD COLUMN source TEXT',
+    'ALTER TABLE approval_processes ADD COLUMN post_id INTEGER',
+    'ALTER TABLE approval_processes ADD COLUMN email_campaign_id INTEGER',
+    'ALTER TABLE approval_processes ADD COLUMN recommendation_id INTEGER',
+  ];
+  for (const sql of additions) {
+    try { db.exec(sql); } catch { /* column already exists — ignore */ }
+  }
 }
 
 // --- Small query helpers (portable surface) -------------------------------

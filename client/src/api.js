@@ -26,6 +26,8 @@ export const api = {
   // Approvals
   submitForApproval: (userId, contentId) =>
     request('/api/approvals/submit', { method: 'POST', body: { contentId }, userId }),
+  publishContent: (userId, id) =>
+    request(`/api/content/${id}/publish`, { method: 'POST', userId }),
   pendingApprovals: (userId) => request('/api/approvals/pending', { userId }),
   approve: (userId, approvalId) =>
     request(`/api/approvals/${approvalId}/approve`, { method: 'POST', userId }),

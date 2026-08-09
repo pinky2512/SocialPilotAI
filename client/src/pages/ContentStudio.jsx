@@ -125,6 +125,16 @@ function DraftCard({ item, userId, onChanged }) {
     }
   }
 
+  async function publish() {
+    setError('');
+    try {
+      await api.publishContent(userId, item.id);
+      onChanged();
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
   return (
     <div className="card">
       <div className="card-head">
@@ -151,6 +161,9 @@ function DraftCard({ item, userId, onChanged }) {
         )}
         {['draft', 'rejected'].includes(item.status) && !editing && (
           <button className="primary" onClick={submit}>Submit for approval</button>
+        )}
+        {item.status === 'approved' && !editing && (
+          <button className="primary" onClick={publish}>Publish</button>
         )}
       </div>
     </div>
