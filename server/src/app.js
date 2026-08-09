@@ -8,6 +8,7 @@ import approvalRoutes from './routes/approvals.js';
 import socialRoutes from './routes/social.js';
 import emailRoutes from './routes/email.js';
 import analyticsRoutes from './routes/analytics.js';
+import recommendationRoutes from './routes/recommendations.js';
 import leadRoutes from './routes/leads.js';
 import auditRoutes from './routes/audit.js';
 import { requireUser } from './http/currentUser.js';
@@ -63,6 +64,7 @@ export function createApp() {
   app.use('/api/social', socialRoutes);
   app.use('/api/email', emailRoutes);
   app.use('/api/analytics', analyticsRoutes);
+  app.use('/api/recommendations', recommendationRoutes);
   app.use('/api/leads', leadRoutes);
   app.use('/api/audit', auditRoutes);
 

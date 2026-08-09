@@ -42,6 +42,24 @@ export default function Dashboard() {
     }
   }, [userId, live]);
 
+  // STORY-024 — propose a recommendation for adoption; it's then held for
+  // human approval (visible in the Approval Queue) before it's accepted.
+  async function propose(campaignId, rec) {
+    setError('');
+    try {
+      await api.proposeRecommendation(userId, {
+        campaignId,
+        type: rec.type,
+        message: rec.message,
+        rationale: rec.rationale,
+        priority: rec.priority,
+      });
+      alert('Proposed — it now needs Administrator approval (see Approval Queue).');
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
   return (
     <div>
       <section className="panel">
@@ -123,6 +141,13 @@ export default function Dashboard() {
                     <span className={`status status-${PRIORITY_TONE[rec.priority] || 'draft'}`}>{rec.priority}</span>
                     <strong> {rec.message}</strong>
                     <div className="hint">{rec.rationale}</div>
+                    {!['on-track', 'gather-data'].includes(rec.type) && (
+                      <div className="card-actions">
+                        <button className="ghost" onClick={() => propose(r.campaignId, rec)}>
+                          Propose for approval
+                        </button>
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

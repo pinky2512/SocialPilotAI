@@ -12,7 +12,7 @@ import { holdForApproval, approve, reject, pendingApprovals } from '../trust/app
 import { logAction } from '../trust/audit.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
-import { get } from '../db/index.js';
+import { get, run, all } from '../db/index.js';
 
 const AGENT_ID = 'governance-and-compliance-agent';
 
@@ -95,6 +95,46 @@ export function submitPostForApproval({ postId, requestedBy }) {
     finishTask(taskId, 'failed');
     throw err;
   }
+}
+
+/**
+ * STORY-024 — propose a predictive recommendation for adoption and HOLD it at
+ * the approval gate. The recommendation is only "accepted" once a human approves
+ * it (via decide → approve). Nothing is auto-adopted.
+ *
+ * @returns {{ recommendation: object, approval: object }}
+ */
+export function proposeRecommendation({ campaignId = null, type, message, rationale = '', priority = 'medium', requestedBy }) {
+  if (!type || !message) throw new Error('recommendation type and message are required');
+  const taskId = startTask({ agentId: AGENT_ID, taskType: 'holdForApproval' });
+  try {
+    const info = run(
+      "INSERT INTO predictive_recommendations (campaign_id, type, message, rationale, priority, status, proposed_by) VALUES (?, ?, ?, ?, ?, 'proposed', ?)",
+      [campaignId, type, message, rationale, priority, requestedBy]
+    );
+    const recId = info.lastInsertRowid;
+    logAction({
+      userId: requestedBy,
+      action: 'recommendation.proposed',
+      details: { recommendationId: recId, campaignId, type, priority },
+    });
+    const approval = holdForApproval({ kind: 'recommendation', targetId: recId, requestedBy });
+    finishTask(taskId, 'done');
+    broker.publish('recommendationApproval', { recommendationId: recId, approvalId: approval.id, event: 'proposed' });
+    return {
+      recommendation: get('SELECT * FROM predictive_recommendations WHERE id = ?', [recId]),
+      approval,
+    };
+  } catch (err) {
+    finishTask(taskId, 'failed');
+    throw err;
+  }
+}
+
+export function listRecommendations({ status } = {}) {
+  return status
+    ? all('SELECT * FROM predictive_recommendations WHERE status = ? ORDER BY id DESC', [status])
+    : all('SELECT * FROM predictive_recommendations ORDER BY id DESC');
 }
 
 // Governance observes content generation across the system for transparency.

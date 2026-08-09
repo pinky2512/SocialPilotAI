@@ -162,5 +162,12 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-021 Latency Optimization for Real-Time Dashboard — short-TTL cache for dashboard/overview aggregates, invalidated on new engagement (stays real-time-correct); `X-Cache` and `X-Response-Time` headers for observability.
 - ✅ STORY-022 Handling Large Datasets in Real-Time Dashboard — DB indexes on hot columns, DB-side aggregation (GROUP BY, not in-memory), and limit/offset pagination with totals on leads + audit endpoints; verified correct over multi-thousand-row event sets.
 - ✅ STORY-023 Audit Logging for Predictive Analytics — explicit predictive-insight and recommendation requests are recorded in the append-only audit log (with actor + result); dashboard polling is deliberately not audited to avoid log flooding. **Completes R5 → Phase 2 sign-off gate.**
-### Phase 3 — Data, Polish + Hardening — ⬜ STORY-024…035
+### Phase 3 — Data, Polish + Hardening
+
+**R6**
+- ✅ STORY-024 Approval Gate for Predictive Recommendations — a generated recommendation can be *proposed for adoption*; it is persisted and HELD at the approval gate (`kind=recommendation` in the unified queue) and only reaches `approved` after a human decision. Dashboard "Propose for approval" button; nothing is auto-adopted.
+- ⬜ STORY-025 Trust Dashboard · ⬜ STORY-026 Governance Score · ⬜ STORY-027 Analytics RBAC
+
+**R7** — ⬜ STORY-028…031
+**R8** — ⬜ STORY-032…035
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044
