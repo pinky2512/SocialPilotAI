@@ -18,6 +18,10 @@ export const PERMISSIONS = Object.freeze({
   EMAIL_CREATE: 'email:create',
   EMAIL_SEND: 'email:send',
   EMAIL_APPROVE: 'email:approve',
+
+  // Analytics features (STORY-027)
+  ANALYTICS_VIEW: 'analytics:view',     // dashboards, metrics, predictions
+  ANALYTICS_INGEST: 'analytics:ingest', // write engagement telemetry
 });
 
 // Wildcard grants every permission (platform admin).
@@ -34,6 +38,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.SOCIAL_SCHEDULE,
     PERMISSIONS.EMAIL_VIEW,
     PERMISSIONS.EMAIL_CREATE,
+    PERMISSIONS.ANALYTICS_VIEW, // managers read analytics; writing telemetry is admin-only
   ],
 });
 

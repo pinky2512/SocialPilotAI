@@ -4,6 +4,8 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
+import { requirePermission } from '../http/rbac.js';
+import { PERMISSIONS } from '../auth/permissions.js';
 import {
   recordEngagementEvent,
   ingestEngagementBatch,
@@ -20,6 +22,13 @@ import {
 } from '../agents/analyticsAgent.js';
 
 const router = Router();
+
+// STORY-027 — RBAC for analytics features. Reads require analytics:view (both
+// roles); writing engagement telemetry requires analytics:ingest (admin only).
+router.use(requireUser, (req, res, next) => {
+  const perm = req.method === 'GET' ? PERMISSIONS.ANALYTICS_VIEW : PERMISSIONS.ANALYTICS_INGEST;
+  return requirePermission(perm)(req, res, next);
+});
 
 // Ingest a single engagement event (ESP webhook swap-in point).
 // POST /api/analytics/email/events { campaignId, recipient?, eventType }

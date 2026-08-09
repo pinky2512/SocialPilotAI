@@ -5,7 +5,8 @@ import { api } from '../api.js';
 // STORY-013 — Visualize Email Engagement Metrics. KPI tiles + labeled meter
 // bars per campaign, driven by the Analytics Agent's metrics endpoint.
 export default function Analytics() {
-  const { userId } = useSession();
+  const { userId, can } = useSession();
+  const canIngest = can('analytics:ingest');
   const [metrics, setMetrics] = useState([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -63,9 +64,11 @@ export default function Analytics() {
         <div className="metric-block" key={m.campaignId}>
           <div className="card-head">
             <h3>{m.name} <span className={`status status-${m.status}`}>{m.status.replace('_', ' ')}</span></h3>
-            <button className="ghost" disabled={busy} onClick={() => simulate(m.campaignId)}>
-              Simulate engagement
-            </button>
+            {canIngest && (
+              <button className="ghost" disabled={busy} onClick={() => simulate(m.campaignId)}>
+                Simulate engagement
+              </button>
+            )}
           </div>
 
           <div className="kpis">
