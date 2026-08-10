@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { queryAudit, countAudit, auditActionTypes, actionsForPost, actionsForContent } from '../trust/audit.js';
+import { queryAudit, countAudit, auditActionTypes, actionsForPost, actionsForContent, verifyAuditIntegrity } from '../trust/audit.js';
 
 const router = Router();
 
@@ -27,6 +27,11 @@ router.get('/', requireUser, (req, res) => {
     limit: lim,
     offset: off,
   });
+});
+
+// STORY-032 — verify the tamper-evident hash chain.  GET /api/audit/verify
+router.get('/verify', requireUser, (_req, res) => {
+  res.json({ integrity: verifyAuditIntegrity() });
 });
 
 // GET /api/audit/actions — distinct action keys (for filter menus).

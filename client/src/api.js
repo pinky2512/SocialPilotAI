@@ -120,4 +120,5 @@ export const api = {
     return request(`/api/audit${qs ? `?${qs}` : ''}`, { userId });
   },
   auditActions: (userId) => request('/api/audit/actions', { userId }),
+  auditVerify: (userId) => request('/api/audit/verify', { userId }),
 };

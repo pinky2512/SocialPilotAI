@@ -5,10 +5,19 @@
 // only ever INSERTs. The audit_log table additionally blocks UPDATE/DELETE at
 // the DB level (see schema.sql triggers) so this invariant cannot be bypassed.
 
+import { createHash } from 'node:crypto';
 import { run, all, get } from '../db/index.js';
 
+// STORY-032 — hash of (previous hash | this row's fields). Position and content
+// are both bound in, so reordering or editing any entry breaks the chain.
+function chainHash(prevHash, userId, action, ts, detailsJson) {
+  return createHash('sha256')
+    .update(`${prevHash}|${userId ?? ''}|${action}|${ts}|${detailsJson}`)
+    .digest('hex');
+}
+
 /**
- * Record an action in the append-only audit log.
+ * Record an action in the append-only, tamper-evident audit log.
  *
  * @param {object} entry
  * @param {number|null} entry.userId  Human actor id, or null for agent/system actions.
@@ -19,11 +28,34 @@ import { run, all, get } from '../db/index.js';
 export function logAction({ userId = null, action, details = {} }) {
   if (!action) throw new Error('audit.logAction requires an action');
   const detailsJson = JSON.stringify(details ?? {});
+  const prev = get('SELECT hash FROM audit_log ORDER BY id DESC LIMIT 1');
+  const prevHash = prev?.hash || '';
+  const ts = new Date().toISOString();
+  const hash = chainHash(prevHash, userId, action, ts, detailsJson);
   const info = run(
-    'INSERT INTO audit_log (user_id, action, details) VALUES (?, ?, ?)',
-    [userId, action, detailsJson]
+    'INSERT INTO audit_log (user_id, action, timestamp, details, prev_hash, hash) VALUES (?, ?, ?, ?, ?, ?)',
+    [userId, action, ts, detailsJson, prevHash, hash]
   );
   return get('SELECT * FROM audit_log WHERE id = ?', [info.lastInsertRowid]);
+}
+
+/**
+ * STORY-032 — verify the audit chain is intact (no entry altered, removed, or
+ * reordered). Recomputes each row's hash and checks the prev-hash links.
+ * @returns {{ ok: boolean, count: number, brokenAt?: number }}
+ */
+export function verifyAuditIntegrity() {
+  const rows = all('SELECT id, user_id, action, timestamp, details, prev_hash, hash FROM audit_log ORDER BY id ASC');
+  let prevHash = '';
+  for (const r of rows) {
+    if (r.hash == null) continue; // legacy row predating the chain — skip
+    const expected = chainHash(r.prev_hash ?? '', r.user_id, r.action, r.timestamp, r.details ?? '{}');
+    if ((r.prev_hash ?? '') !== prevHash || r.hash !== expected) {
+      return { ok: false, count: rows.length, brokenAt: r.id };
+    }
+    prevHash = r.hash;
+  }
+  return { ok: true, count: rows.length };
 }
 
 /** Recent audit entries, newest first. Used by the trust dashboard. */

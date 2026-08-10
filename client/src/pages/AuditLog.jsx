@@ -16,14 +16,19 @@ const FILTERS = [
 export default function AuditLog() {
   const { userId } = useSession();
   const [entries, setEntries] = useState([]);
+  const [integrity, setIntegrity] = useState(null);
   const [prefix, setPrefix] = useState('');
   const [error, setError] = useState('');
 
   async function refresh() {
     setError('');
     try {
-      const { entries } = await api.audit(userId, { prefix: prefix || undefined, limit: 200 });
+      const [{ entries }, { integrity }] = await Promise.all([
+        api.audit(userId, { prefix: prefix || undefined, limit: 200 }),
+        api.auditVerify(userId),
+      ]);
       setEntries(entries);
+      setIntegrity(integrity);
     } catch (e) {
       setError(e.message);
     }
@@ -37,7 +42,14 @@ export default function AuditLog() {
     <section className="panel">
       <div className="card-head">
         <h2>Audit log</h2>
-        <button onClick={refresh}>Refresh</button>
+        <div className="card-actions">
+          {integrity && (
+            <span className={`status status-${integrity.ok ? 'approved' : 'rejected'}`} style={{ fontSize: 12 }}>
+              {integrity.ok ? `🔒 chain verified · ${integrity.count} entries` : `⚠ tampering at #${integrity.brokenAt}`}
+            </span>
+          )}
+          <button onClick={refresh}>Refresh</button>
+        </div>
       </div>
       <p className="hint">
         Append-only record of every meaningful action (who · what · when · details). Immutable — entries can

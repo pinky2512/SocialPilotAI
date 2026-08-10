@@ -47,7 +47,11 @@ CREATE TABLE IF NOT EXISTS audit_log (
   user_id   INTEGER,               -- nullable: system/agent actions have no human user
   action    TEXT    NOT NULL,
   timestamp TEXT    NOT NULL DEFAULT (datetime('now')),
-  details   TEXT                   -- JSON blob: who/what/before-after context
+  details   TEXT,                  -- JSON blob: who/what/before-after context
+  -- STORY-032: tamper-evident hash chain. Each row's hash covers the previous
+  -- row's hash + this row's fields, so any alteration breaks the chain.
+  prev_hash TEXT,
+  hash      TEXT
 );
 
 CREATE TRIGGER IF NOT EXISTS audit_log_no_update
