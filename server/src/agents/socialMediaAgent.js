@@ -86,11 +86,14 @@ export function listAccounts(userId) {
  * @param {string}   [p.scheduledAt] ISO datetime to publish
  * @returns {object[]} the created (held) social_posts rows.
  */
-export function schedulePost({ userId, contentId, accountIds, scheduledAt = null }) {
+export function schedulePost({ userId, contentId, accountIds, scheduledAt = null, imageId = null }) {
   const content = get('SELECT * FROM content WHERE id = ?', [contentId]);
   if (!content) throw new Error(`content ${contentId} not found`);
   if (!Array.isArray(accountIds) || accountIds.length === 0) {
     throw new Error('at least one target accountId is required');
+  }
+  if (imageId != null && !get('SELECT id FROM content_images WHERE id = ?', [imageId])) {
+    throw new Error(`image ${imageId} not found`);
   }
 
   const taskId = startTask({ agentId: AGENT_ID, taskType: 'schedulePost' });
@@ -104,15 +107,15 @@ export function schedulePost({ userId, contentId, accountIds, scheduledAt = null
       }
       const postText = adaptForPlatform(content.content_text, account.platform);
       const info = run(
-        `INSERT INTO social_posts (content_id, account_id, platform, post_text, scheduled_at, status, created_by)
-         VALUES (?, ?, ?, ?, ?, 'draft', ?)`,
-        [contentId, accountId, account.platform, postText, scheduledAt, userId]
+        `INSERT INTO social_posts (content_id, account_id, platform, post_text, image_id, scheduled_at, status, created_by)
+         VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)`,
+        [contentId, accountId, account.platform, postText, imageId, scheduledAt, userId]
       );
       const postId = info.lastInsertRowid;
       logAction({
         userId,
         action: 'social.post_scheduled',
-        details: { postId, contentId, accountId, platform: account.platform, scheduledAt },
+        details: { postId, contentId, accountId, platform: account.platform, scheduledAt, imageId },
       });
       // Approval-gate contract: hold the post for human approval before publish.
       holdForApproval({ kind: 'post', targetId: postId, requestedBy: userId });

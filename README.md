@@ -124,12 +124,16 @@ npm run dev      # http://localhost:5173 (proxies /api to the backend on :4000)
 
 ### Extensions (beyond the 44 tracked stories)
 
-- **AI image generation** — generate marketing images from a prompt via the
-  OpenAI Images API (`OPENAI_API_KEY`, model `gpt-image-1` by default, override
-  with `OPENAI_IMAGE_MODEL`); a placeholder SVG is produced when no key is set.
-  Images are **held for human approval** before use (same gate as text) and every
-  generation is audited. UI: an **Images** page + image previews in the Approval
-  Queue.
+- **AI image generation + upload** — generate marketing images from a prompt via
+  the OpenAI Images API (`OPENAI_API_KEY`, model `gpt-image-1` by default,
+  override with `OPENAI_IMAGE_MODEL`); a placeholder SVG is produced when no key
+  is set. For a **new product you can't generate**, you can **upload a photo**
+  instead (optional). Images are **held for human approval** before use (same gate
+  as text) and every generation/upload is audited.
+- **Combined text + image posts** — a scheduled social post can carry an
+  **attached image** (`social_posts.image_id`), so text and image schedule and
+  publish to the accounts together; thumbnails show in the scheduler, posts list,
+  and Approval Queue.
 
 ## Progress log
 

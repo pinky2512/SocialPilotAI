@@ -60,3 +60,27 @@ test('an image only goes live via the approval gate', async () => {
 test('generateImage rejects an empty prompt', async () => {
   await assert.rejects(() => img.generateImage({ userId: manager(), prompt: '  ' }));
 });
+
+test('uploadImage stores a user-provided image (data URL)', () => {
+  // 1x1 transparent PNG
+  const dataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M8AAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
+  const image = img.uploadImage({ userId: manager(), dataUrl, label: 'New product photo' });
+  assert.equal(image.source, 'upload');
+  assert.equal(image.status, 'draft');
+  assert.ok(existsSync(image.file_path));
+  assert.ok(get("SELECT * FROM audit_log WHERE action = 'image.uploaded'"));
+});
+
+test('uploadImage rejects a non-data-URL', () => {
+  assert.throws(() => img.uploadImage({ userId: manager(), dataUrl: 'not-a-data-url' }), /data URL/);
+});
+
+test('a post can carry an attached image (text + image scheduled together)', async () => {
+  const { generateContent } = await import('../src/agents/contentGenerationAgent.js');
+  const social = await import('../src/agents/socialMediaAgent.js');
+  const image = await img.generateImage({ userId: manager(), prompt: 'hero' });
+  const c = generateContent({ creatorId: manager(), prompt: 'Launch' });
+  const acct = social.connectAccount({ userId: manager(), platform: 'twitter', handle: '@b' });
+  const [post] = social.schedulePost({ userId: manager(), contentId: c.id, accountIds: [acct.id], imageId: image.id });
+  assert.equal(post.image_id, image.id);
+});

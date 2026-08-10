@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS social_posts (
   account_id   INTEGER NOT NULL REFERENCES social_accounts(id),
   platform     TEXT    NOT NULL,
   post_text    TEXT    NOT NULL,                 -- platform-adapted text
+  image_id     INTEGER REFERENCES content_images(id),  -- optional attached image
   scheduled_at TEXT,                             -- ISO time to publish
   -- lifecycle: draft -> pending_approval -> approved -> published | failed | rejected
   status       TEXT    NOT NULL DEFAULT 'draft',

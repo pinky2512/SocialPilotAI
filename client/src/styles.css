@@ -94,6 +94,8 @@ button.ghost { background: transparent; }
 .channel-list li { display: flex; justify-content: space-between; padding: 3px 0; text-transform: capitalize; }
 
 .img-preview { width: 100%; border-radius: 10px; border: 1px solid var(--line); margin: 6px 0; display: block; }
+.upload-btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 14px; }
+.upload-btn:hover { border-color: var(--accent); }
 
 .explain { margin-top: 10px; }
 .explain summary { cursor: pointer; color: var(--accent); font-size: 13px; user-select: none; }

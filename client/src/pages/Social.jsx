@@ -9,18 +9,21 @@ export default function Social() {
   const [accounts, setAccounts] = useState([]);
   const [content, setContent] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [images, setImages] = useState([]);
   const [error, setError] = useState('');
 
   async function refresh() {
     try {
-      const [a, c, p] = await Promise.all([
+      const [a, c, p, im] = await Promise.all([
         api.listAccounts(userId),
         api.listContent(userId),
         api.listPosts(userId),
+        api.listImages(userId),
       ]);
       setAccounts(a.accounts);
       setContent(c.content);
       setPosts(p.posts);
+      setImages(im.images);
     } catch (e) {
       setError(e.message);
     }
@@ -38,7 +41,7 @@ export default function Social() {
       </div>
       {error && <div className="error">{error}</div>}
       <Accounts userId={userId} accounts={accounts} onChanged={refresh} />
-      <Scheduler userId={userId} accounts={accounts} content={content} onChanged={refresh} />
+      <Scheduler userId={userId} accounts={accounts} content={content} images={images} onChanged={refresh} />
       <Posts userId={userId} posts={posts} onChanged={refresh} />
     </div>
   );
@@ -109,9 +112,10 @@ function Accounts({ userId, accounts, onChanged }) {
   );
 }
 
-function Scheduler({ userId, accounts, content, onChanged }) {
+function Scheduler({ userId, accounts, content, images = [], onChanged }) {
   const { can } = useSession();
   const [contentId, setContentId] = useState('');
+  const [imageId, setImageId] = useState('');
   const [selected, setSelected] = useState([]);
   const [scheduledAt, setScheduledAt] = useState('');
   const [previews, setPreviews] = useState([]);
@@ -139,8 +143,10 @@ function Scheduler({ userId, accounts, content, onChanged }) {
         contentId: Number(contentId),
         accountIds: selected,
         scheduledAt: scheduledAt || null,
+        imageId: imageId ? Number(imageId) : null,
       });
       setSelected([]);
+      setImageId('');
       onChanged();
     } catch (e) {
       setError(e.message);
@@ -171,10 +177,20 @@ function Scheduler({ userId, accounts, content, onChanged }) {
           </select>
         </label>
         <label>
+          Image (optional)
+          <select value={imageId} onChange={(e) => setImageId(e.target.value)}>
+            <option value="">No image</option>
+            {images.map((im) => (
+              <option key={im.id} value={im.id}>#{im.id} · {im.status} · {im.prompt.slice(0, 30)}</option>
+            ))}
+          </select>
+        </label>
+        <label>
           Publish at (optional)
           <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
         </label>
       </div>
+      {imageId && <img className="img-preview" style={{ maxWidth: 220 }} src={api.imageUrl(imageId)} alt="attached" />}
       <div className="chips">
         {connected.map((a) => (
           <button
@@ -231,6 +247,7 @@ function Posts({ userId, posts, onChanged }) {
               <span className="cid">{p.platform} #{p.id}</span>
             </div>
             <p className="body">{p.post_text}</p>
+            {p.image_id && <img className="img-preview" src={api.imageUrl(p.image_id)} alt="attached" />}
             {p.scheduled_at && <p className="hint">Scheduled: {p.scheduled_at}</p>}
             {p.status === 'approved' && canPublish && (
               <div className="card-actions">

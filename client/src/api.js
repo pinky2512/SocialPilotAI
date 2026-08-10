@@ -34,6 +34,8 @@ export const api = {
   // Images
   generateImage: (userId, payload) =>
     request('/api/images/generate', { method: 'POST', body: payload, userId }),
+  uploadImage: (userId, payload) =>
+    request('/api/images/upload', { method: 'POST', body: payload, userId }),
   listImages: (userId, status) =>
     request(`/api/images${status ? `?status=${status}` : ''}`, { userId }),
   submitImage: (userId, id) =>

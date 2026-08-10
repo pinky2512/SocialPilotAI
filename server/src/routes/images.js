@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { generateImage, submitImageForApproval, listImages, getImage } from '../agents/imageAgent.js';
+import { generateImage, uploadImage, submitImageForApproval, listImages, getImage } from '../agents/imageAgent.js';
 
 const router = Router();
 
@@ -15,6 +15,17 @@ router.post('/generate', requireUser, async (req, res) => {
   const { prompt, contentId, size } = req.body || {};
   try {
     const image = await generateImage({ userId: req.user.id, prompt, contentId: contentId ?? null, size });
+    res.status(201).json({ image });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Upload an image (optional, for new products).  POST /api/images/upload { dataUrl, label?, contentId? }
+router.post('/upload', requireUser, (req, res) => {
+  const { dataUrl, label, contentId } = req.body || {};
+  try {
+    const image = uploadImage({ userId: req.user.id, dataUrl, label, contentId: contentId ?? null });
     res.status(201).json({ image });
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -99,6 +99,41 @@ function placeholderSvg(prompt) {
   return { bytes: Buffer.from(svg, 'utf8'), mime: 'image/svg+xml', ext: 'svg' };
 }
 
+const MIME_EXT = {
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg',
+  'image/webp': 'webp', 'image/gif': 'gif', 'image/svg+xml': 'svg',
+};
+
+/**
+ * uploadImage — store a user-provided image (for new products you can't
+ * AI-generate). Accepts a data URL (data:image/...;base64,...). Same lifecycle
+ * as a generated image: saved as 'draft', held for approval before use.
+ * @returns {object} the content_images row.
+ */
+export function uploadImage({ userId, dataUrl, label = 'Uploaded image', contentId = null }) {
+  const m = typeof dataUrl === 'string' && dataUrl.match(/^data:(.+?);base64,(.*)$/s);
+  if (!m) throw new Error('uploadImage requires a base64 data URL');
+  const mime = m[1];
+  const ext = MIME_EXT[mime];
+  if (!ext) throw new Error(`unsupported image type '${mime}'`);
+  const bytes = Buffer.from(m[2], 'base64');
+  if (bytes.length === 0) throw new Error('empty image');
+
+  const info = run(
+    "INSERT INTO content_images (content_id, prompt, status, source, created_by) VALUES (?, ?, 'draft', 'upload', ?)",
+    [contentId, label, userId]
+  );
+  const id = info.lastInsertRowid;
+  mkdirSync(IMAGE_DIR, { recursive: true });
+  const filePath = join(IMAGE_DIR, `${id}.${ext}`);
+  writeFileSync(filePath, bytes);
+  run('UPDATE content_images SET file_path = ?, mime = ? WHERE id = ?', [filePath, mime, id]);
+
+  logAction({ userId, action: 'image.uploaded', details: { imageId: id, label, contentId, bytes: bytes.length } });
+  broker.publish('imageGenerated', { imageId: id, userId });
+  return get('SELECT * FROM content_images WHERE id = ?', [id]);
+}
+
 /** Submit (or re-submit) an image for human approval. */
 export function submitImageForApproval({ imageId, requestedBy }) {
   const img = get('SELECT * FROM content_images WHERE id = ?', [imageId]);

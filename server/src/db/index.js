@@ -47,6 +47,7 @@ function runMigrations() {
     'ALTER TABLE approval_processes ADD COLUMN email_campaign_id INTEGER',
     'ALTER TABLE approval_processes ADD COLUMN recommendation_id INTEGER',
     'ALTER TABLE approval_processes ADD COLUMN image_id INTEGER',
+    'ALTER TABLE social_posts ADD COLUMN image_id INTEGER',
   ];
   for (const sql of additions) {
     try { db.exec(sql); } catch { /* column already exists — ignore */ }

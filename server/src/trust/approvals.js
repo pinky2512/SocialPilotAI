@@ -120,7 +120,7 @@ export function pendingApprovals() {
   const posts = all(`
     SELECT ap.id AS approval_id, ap.status AS approval_status, 'post' AS kind,
            ap.post_id, sp.post_text AS preview, sp.status AS target_status,
-           sp.created_by AS creator_id, sp.platform, sp.scheduled_at
+           sp.created_by AS creator_id, sp.platform, sp.scheduled_at, sp.image_id
     FROM approval_processes ap
     JOIN social_posts sp ON sp.id = ap.post_id
     WHERE ap.status = 'pending' AND ap.post_id IS NOT NULL

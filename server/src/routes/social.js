@@ -63,13 +63,14 @@ router.post('/preview', requireUser, requirePermission(PERMISSIONS.SOCIAL_SCHEDU
 
 // STORY-005 — schedule posts.  POST /api/social/posts { contentId, accountIds, scheduledAt? }
 router.post('/posts', requireUser, requirePermission(PERMISSIONS.SOCIAL_SCHEDULE), (req, res) => {
-  const { contentId, accountIds, scheduledAt } = req.body || {};
+  const { contentId, accountIds, scheduledAt, imageId } = req.body || {};
   try {
     const posts = schedulePost({
       userId: req.user.id,
       contentId: Number(contentId),
       accountIds: (accountIds || []).map(Number),
       scheduledAt: scheduledAt || null,
+      imageId: imageId != null ? Number(imageId) : null,
     });
     res.status(201).json({ posts });
   } catch (err) {

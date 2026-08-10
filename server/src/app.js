@@ -19,7 +19,8 @@ import { getPermissions } from './agents/securityAgent.js';
 
 export function createApp() {
   const app = express();
-  app.use(express.json());
+  // Larger limit so base64 image uploads fit (STORY-ext image upload).
+  app.use(express.json({ limit: '15mb' }));
 
   // STORY-021 — response-time header for latency observability. Set just before
   // the response is sent (patching res.end) so the header actually lands.

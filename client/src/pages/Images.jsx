@@ -49,6 +49,29 @@ export default function Images() {
     }
   }
 
+  // Optional: upload a photo (for a new product you can't AI-generate).
+  async function onUpload(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true);
+    setError('');
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      await api.uploadImage(userId, { dataUrl, label: file.name });
+      await refresh();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div>
       <section className="panel">
@@ -69,8 +92,13 @@ export default function Images() {
             <button className="primary" type="submit" disabled={busy || !prompt.trim()}>
               {busy ? 'Generating…' : 'Generate image'}
             </button>
+            <label className="upload-btn">
+              Upload a photo (optional)
+              <input type="file" accept="image/*" onChange={onUpload} disabled={busy} hidden />
+            </label>
           </div>
         </form>
+        <p className="hint">New product with no image to generate? Upload your own photo instead.</p>
         {error && <div className="error">{error}</div>}
       </section>
 
