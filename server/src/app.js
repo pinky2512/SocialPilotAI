@@ -18,6 +18,7 @@ import notificationRoutes from './routes/notifications.js';
 import auditRoutes from './routes/audit.js';
 import { requireUser } from './http/currentUser.js';
 import { getPermissions } from './agents/securityAgent.js';
+import { getLegal } from './trust/legal.js';
 
 export function createApp() {
   const app = express();
@@ -59,6 +60,9 @@ export function createApp() {
       docs: 'See README.md and docs/trust-before-intelligence.md',
     });
   });
+
+  // STORY-034 — Privacy Policy & Terms of Service (public).  GET /api/legal
+  app.get('/api/legal', (_req, res) => res.json({ legal: getLegal() }));
 
   // Current user + their permissions (for UI gating).  GET /api/me
   app.get('/api/me', requireUser, (req, res) => {

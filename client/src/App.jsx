@@ -13,6 +13,7 @@ import Analytics from './pages/Analytics.jsx';
 import Audience from './pages/Audience.jsx';
 import Trust from './pages/Trust.jsx';
 import Privacy from './pages/Privacy.jsx';
+import Legal from './pages/Legal.jsx';
 import AuditLog from './pages/AuditLog.jsx';
 
 export default function App() {
@@ -76,6 +77,7 @@ export default function App() {
           <Route path="/audience" element={<Audience />} />
           <Route path="/trust" element={<Trust />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/legal" element={<Legal />} />
           <Route path="/approvals" element={<ApprovalQueue />} />
           <Route path="/audit" element={<AuditLog />} />
           <Route path="/notifications" element={<Notifications />} />
@@ -84,6 +86,8 @@ export default function App() {
 
       <footer className="foot">
         Trust Before Intelligence — every AI action is drafted, held for human approval, and audited.
+        {' · '}
+        <NavLink to="/legal" className="foot-link">Privacy Policy &amp; Terms</NavLink>
       </footer>
     </div>
   );

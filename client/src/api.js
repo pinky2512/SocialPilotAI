@@ -113,6 +113,9 @@ export const api = {
   markAllNotificationsRead: (userId) =>
     request('/api/notifications/read-all', { method: 'POST', userId }),
 
+  // Legal (public)
+  legal: () => request('/api/legal'),
+
   // Session / RBAC
   me: (userId) => request('/api/me', { userId }),
 
