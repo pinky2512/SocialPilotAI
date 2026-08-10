@@ -5,6 +5,7 @@ import express from 'express';
 import { attachCurrentUser } from './http/currentUser.js';
 import contentRoutes from './routes/content.js';
 import imageRoutes from './routes/images.js';
+import documentRoutes from './routes/documents.js';
 import approvalRoutes from './routes/approvals.js';
 import socialRoutes from './routes/social.js';
 import emailRoutes from './routes/email.js';
@@ -65,6 +66,7 @@ export function createApp() {
 
   app.use('/api/content', contentRoutes);
   app.use('/api/images', imageRoutes);
+  app.use('/api/documents', documentRoutes);
   app.use('/api/approvals', approvalRoutes);
   app.use('/api/social', socialRoutes);
   app.use('/api/email', emailRoutes);

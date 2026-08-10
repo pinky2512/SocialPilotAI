@@ -148,6 +148,18 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+-- EXTENSION — product documents (briefs/spec sheets) uploaded to ground AI
+-- content generation for new products. We store the extracted text, not the file.
+CREATE TABLE IF NOT EXISTS product_documents (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  filename       TEXT    NOT NULL,
+  mime           TEXT,
+  extracted_text TEXT,
+  chars          INTEGER,
+  uploaded_by    INTEGER REFERENCES users(id),
+  created_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 -- EXTENSION — AI-generated marketing images. Held for human approval before
 -- use, exactly like text content. DEV NOTE: real generation uses the OpenAI
 -- Images API (OPENAI_API_KEY); without a key a placeholder SVG is produced.

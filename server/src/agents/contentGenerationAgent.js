@@ -47,7 +47,7 @@ export function generateContent({ creatorId, campaignId = null, prompt, platform
  *
  * @param {boolean} [p.useLLM] override auto-detection (tests pass false).
  */
-export async function generateContentAI({ creatorId, campaignId = null, prompt, platform = 'generic', tone = 'professional', useLLM }) {
+export async function generateContentAI({ creatorId, campaignId = null, prompt, platform = 'generic', tone = 'professional', useLLM, documentId = null, groundingContext = '' }) {
   if (!prompt || !prompt.trim()) throw new Error('generateContent requires a prompt');
   const viaLLM = useLLM ?? isLLMConfigured();
   const taskId = startTask({ agentId: AGENT_ID, taskType: 'generateContent' });
@@ -55,14 +55,14 @@ export async function generateContentAI({ creatorId, campaignId = null, prompt, 
     let draftText;
     let source;
     if (viaLLM) {
-      // STORY-031 — feed accumulated user feedback into generation as guidance.
-      draftText = await generateDraft({ prompt, platform, tone, guidance: feedbackSummary().guidance });
+      // STORY-031 feedback guidance + document grounding (new-product facts).
+      draftText = await generateDraft({ prompt, platform, tone, guidance: feedbackSummary().guidance, context: groundingContext });
       source = activeModel();
     } else {
       draftText = draftFromPrompt({ prompt, platform, tone });
       source = 'template';
     }
-    return persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone, taskId, source });
+    return persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone, taskId, source, documentId });
   } catch (err) {
     finishTask(taskId, 'failed');
     throw err;
@@ -70,7 +70,7 @@ export async function generateContentAI({ creatorId, campaignId = null, prompt, 
 }
 
 /** Shared persistence: insert draft, audit, close the task, announce. */
-function persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone, taskId, source }) {
+function persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone, taskId, source, documentId = null }) {
   const info = run(
     "INSERT INTO content (campaign_id, creator_id, content_text, status, source) VALUES (?, ?, ?, 'draft', ?)",
     [campaignId, creatorId, draftText, source]
@@ -80,7 +80,7 @@ function persistDraft({ creatorId, campaignId, draftText, prompt, platform, tone
   logAction({
     userId: creatorId,
     action: 'content.generated',
-    details: { contentId: content.id, agent: AGENT_ID, prompt, platform, tone, campaignId, source },
+    details: { contentId: content.id, agent: AGENT_ID, prompt, platform, tone, campaignId, source, documentId: documentId || undefined },
   });
 
   finishTask(taskId, 'done');

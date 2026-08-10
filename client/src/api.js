@@ -18,6 +18,10 @@ export const api = {
   // Content
   generateContent: (userId, payload) =>
     request('/api/content/generate', { method: 'POST', body: payload, userId }),
+  // Product documents (grounding)
+  listDocuments: (userId) => request('/api/documents', { userId }),
+  uploadDocument: (userId, payload) =>
+    request('/api/documents/upload', { method: 'POST', body: payload, userId }),
   editContent: (userId, id, contentText) =>
     request(`/api/content/${id}`, { method: 'PATCH', body: { contentText }, userId }),
   listContent: (userId, status) =>

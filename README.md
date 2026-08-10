@@ -130,6 +130,11 @@ npm run dev      # http://localhost:5173 (proxies /api to the backend on :4000)
   is set. For a **new product you can't generate**, you can **upload a photo**
   instead (optional). Images are **held for human approval** before use (same gate
   as text) and every generation/upload is audited.
+- **Document-grounded generation** — upload a product brief / spec sheet
+  (**PDF** via `pdf-parse`, or text/Markdown) on Content Studio; the text is
+  extracted and passed to the LLM with a "use only these facts, don't invent"
+  instruction, so copy for a **brand-new product** the model has never seen is
+  factually grounded. The grounding document is recorded in the audit trail.
 - **Combined text + image posts** — a scheduled social post can carry an
   **attached image** (`social_posts.image_id`), so text and image schedule and
   publish to the accounts together; thumbnails show in the scheduler, posts list,

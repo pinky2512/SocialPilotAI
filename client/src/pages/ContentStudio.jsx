@@ -9,13 +9,19 @@ export default function ContentStudio() {
   const [platform, setPlatform] = useState('twitter');
   const [tone, setTone] = useState('professional');
   const [items, setItems] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [documentId, setDocumentId] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
     try {
-      const { content } = await api.listContent(userId);
+      const [{ content }, { documents }] = await Promise.all([
+        api.listContent(userId),
+        api.listDocuments(userId),
+      ]);
       setItems(content);
+      setDocuments(documents);
     } catch (e) {
       setError(e.message);
     }
@@ -30,11 +36,36 @@ export default function ContentStudio() {
     setError('');
     setBusy(true);
     try {
-      await api.generateContent(userId, { prompt, platform, tone });
+      await api.generateContent(userId, { prompt, platform, tone, documentId: documentId || undefined });
       setPrompt('');
       await refresh();
     } catch (e) {
       setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Optional: upload a product brief/spec (PDF or text) to ground generation
+  // for a new product the AI has no knowledge of.
+  async function onUploadDoc(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setBusy(true);
+    setError('');
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      const { document } = await api.uploadDocument(userId, { filename: file.name, mime: file.type, dataUrl });
+      await refresh();
+      setDocumentId(String(document.id)); // auto-select the just-uploaded doc
+    } catch (err) {
+      setError(err.message);
     } finally {
       setBusy(false);
     }
@@ -74,11 +105,28 @@ export default function ContentStudio() {
                 <option value="friendly">Friendly</option>
               </select>
             </label>
+            <label>
+              Ground on document (optional)
+              <select value={documentId} onChange={(e) => setDocumentId(e.target.value)}>
+                <option value="">None</option>
+                {documents.map((d) => (
+                  <option key={d.id} value={d.id}>#{d.id} · {d.filename}</option>
+                ))}
+              </select>
+            </label>
             <button type="submit" disabled={busy || !prompt.trim()}>
               {busy ? 'Generating…' : 'Generate draft'}
             </button>
           </div>
+          <div className="card-actions">
+            <label className="upload-btn">
+              Upload product document (PDF/text)
+              <input type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown" onChange={onUploadDoc} disabled={busy} hidden />
+            </label>
+            {documentId && <span className="hint">✓ grounding on document #{documentId} — the AI will use only its facts.</span>}
+          </div>
         </form>
+        <p className="hint">New product the AI doesn't know? Upload its brief/spec sheet and the copy is written from those facts.</p>
         {error && <div className="error">{error}</div>}
       </section>
 

@@ -5,6 +5,7 @@
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
 import { generateContentAI, editContent, publishContent, recordFeedback, feedbackSummary } from '../agents/contentGenerationAgent.js';
+import { getDocumentText } from '../agents/documentAgent.js';
 import { all, get } from '../db/index.js';
 
 const router = Router();
@@ -12,17 +13,20 @@ const router = Router();
 // STORY-001 — AI-Driven Content Draft Generation.
 // POST /api/content/generate  { prompt, campaignId?, platform?, tone? }
 router.post('/generate', requireUser, async (req, res) => {
-  const { prompt, campaignId, platform, tone } = req.body || {};
+  const { prompt, campaignId, platform, tone, documentId } = req.body || {};
   if (!prompt || !String(prompt).trim()) {
     return res.status(400).json({ error: 'prompt is required' });
   }
   try {
+    const groundingContext = documentId ? (getDocumentText(Number(documentId)) || '') : '';
     const content = await generateContentAI({
       creatorId: req.user.id,
       campaignId: campaignId ?? null,
       prompt,
       platform,
       tone,
+      documentId: documentId ? Number(documentId) : null,
+      groundingContext,
     });
     res.status(201).json({ content });
   } catch (err) {

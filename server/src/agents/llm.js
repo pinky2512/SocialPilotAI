@@ -44,7 +44,7 @@ const PLATFORM_HINTS = {
   generic: 'Clear, engaging marketing copy.',
 };
 
-function buildPrompt({ prompt, platform, tone, guidance }) {
+function buildPrompt({ prompt, platform, tone, guidance, context }) {
   const hint = PLATFORM_HINTS[platform] || PLATFORM_HINTS.generic;
   const system =
     'You are a marketing copywriter for Social Pilot AI. Write a single, ready-to-post ' +
@@ -52,17 +52,22 @@ function buildPrompt({ prompt, platform, tone, guidance }) {
     'no explanations, no surrounding quotes.';
   // STORY-031 — inject learning guidance derived from past user feedback.
   const learn = guidance ? `\n\nGuidance from past feedback: ${guidance}` : '';
-  const user = `Platform: ${platform}\nTone: ${tone}\n${hint}${learn}\n\nWrite the post about: ${prompt}`;
+  // Document grounding — write ONLY from the provided product facts (new products).
+  const ground = context
+    ? `\n\nProduct document (use ONLY these facts; do not invent details not present here):\n"""\n${context}\n"""`
+    : '';
+  const user = `Platform: ${platform}\nTone: ${tone}\n${hint}${learn}${ground}\n\nWrite the post about: ${prompt}`;
   return { system, user };
 }
 
 /**
  * Generate a content draft using the configured provider.
  * @param {string} [p.guidance] learning guidance from past feedback (STORY-031).
+ * @param {string} [p.context]  product-document text to ground the copy on.
  * @returns {Promise<string>} the draft body (text only).
  */
-export async function generateDraft({ prompt, platform = 'generic', tone = 'professional', guidance = '' }) {
-  const parts = buildPrompt({ prompt, platform, tone, guidance });
+export async function generateDraft({ prompt, platform = 'generic', tone = 'professional', guidance = '', context = '' }) {
+  const parts = buildPrompt({ prompt, platform, tone, guidance, context });
   const text = PROVIDER === 'openai'
     ? await generateWithOpenAI(parts)
     : await generateWithClaude(parts);
