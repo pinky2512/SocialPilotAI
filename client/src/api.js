@@ -99,6 +99,12 @@ export const api = {
   // Trust dashboard
   trust: (userId) => request('/api/trust/dashboard', { userId }),
 
+  // Privacy / data-subject rights
+  privacyExport: (userId, subject) =>
+    request('/api/privacy/export', { method: 'POST', body: { subject }, userId }),
+  privacyDelete: (userId, subject) =>
+    request('/api/privacy/delete', { method: 'POST', body: { subject }, userId }),
+
   // Notifications
   notifications: (userId, unreadOnly) =>
     request(`/api/notifications${unreadOnly ? '?unread=1' : ''}`, { userId }),

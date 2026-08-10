@@ -195,5 +195,6 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-031 Incorporate User Feedback into AI Learning — 👍/👎 feedback on content (rejections count as implicit negative signal); `feedbackSummary` derives guidance from recent negative comments and injects it into future LLM generation (swap-in point for real fine-tuning/RLHF). **Completes R7.**
 **R8**
 - ✅ STORY-032 Log All Actions in an Append-Only Audit Log — the append-only log (DB-trigger enforced) is now also **tamper-evident**: every entry is hash-chained to the previous (`prev_hash` + SHA-256 `hash`), and `GET /api/audit/verify` recomputes the chain to detect any alteration/reorder. Audit Log page shows a "🔒 chain verified" badge.
-- ⬜ STORY-033 GDPR/CCPA Data Deletion & Export · ⬜ STORY-034 Privacy/ToS · ⬜ STORY-035 Efficient Export
+- ✅ STORY-033 GDPR/CCPA Data Deletion & Export — export or erase all personal data for a contact (by email); erasure anonymizes mutable records (lead, engagement recipients, user) and logs the deletion (only a subject hash in the immutable log). Administrator-only (`privacy:manage`); a **Privacy** page with export-download + erase.
+- ⬜ STORY-034 Privacy/ToS · ⬜ STORY-035 Efficient Export
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

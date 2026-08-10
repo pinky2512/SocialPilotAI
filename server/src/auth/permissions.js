@@ -22,6 +22,9 @@ export const PERMISSIONS = Object.freeze({
   // Analytics features (STORY-027)
   ANALYTICS_VIEW: 'analytics:view',     // dashboards, metrics, predictions
   ANALYTICS_INGEST: 'analytics:ingest', // write engagement telemetry
+
+  // Privacy / compliance (STORY-033) — export/erase personal data
+  PRIVACY_MANAGE: 'privacy:manage',
 });
 
 // Wildcard grants every permission (platform admin).
