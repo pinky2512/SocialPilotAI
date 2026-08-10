@@ -197,5 +197,5 @@ Legend: ✅ Done · 🚧 In progress · ⬜ Not started
 - ✅ STORY-032 Log All Actions in an Append-Only Audit Log — the append-only log (DB-trigger enforced) is now also **tamper-evident**: every entry is hash-chained to the previous (`prev_hash` + SHA-256 `hash`), and `GET /api/audit/verify` recomputes the chain to detect any alteration/reorder. Audit Log page shows a "🔒 chain verified" badge.
 - ✅ STORY-033 GDPR/CCPA Data Deletion & Export — export or erase all personal data for a contact (by email); erasure anonymizes mutable records (lead, engagement recipients, user) and logs the deletion (only a subject hash in the immutable log). Administrator-only (`privacy:manage`); a **Privacy** page with export-download + erase.
 - ✅ STORY-034 Display Privacy Policy and Terms of Service — versioned legal docs served from the backend (`GET /api/legal`, public) and shown on a **Legal** page (tabbed Privacy/Terms) linked from the footer.
-- ⬜ STORY-035 Efficient Export
+- ✅ STORY-035 Process Data Export Requests Efficiently — export is now a queued request (`pending → completed`), processed in a **batch** with the result **stored** so downloads don't recompute; indexed by status. Privacy page has a queued-requests table with per-request download. **Completes R8 → Phase 3 sign-off gate.**
 ### Phase 4 — Launch Readiness + Go-Live — ⬜ STORY-036…044

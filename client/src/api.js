@@ -104,6 +104,12 @@ export const api = {
     request('/api/privacy/export', { method: 'POST', body: { subject }, userId }),
   privacyDelete: (userId, subject) =>
     request('/api/privacy/delete', { method: 'POST', body: { subject }, userId }),
+  privacyCreateRequest: (userId, subject) =>
+    request('/api/privacy/requests', { method: 'POST', body: { subject }, userId }),
+  privacyListRequests: (userId) => request('/api/privacy/requests', { userId }),
+  privacyGetRequest: (userId, id) => request(`/api/privacy/requests/${id}`, { userId }),
+  privacyProcessRequests: (userId) =>
+    request('/api/privacy/requests/process', { method: 'POST', userId }),
 
   // Notifications
   notifications: (userId, unreadOnly) =>

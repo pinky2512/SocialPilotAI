@@ -152,6 +152,20 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
   created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+-- R8 (STORY-035) — queued data export requests, processed in batches; the
+-- computed export is stored so downloads don't recompute.
+CREATE TABLE IF NOT EXISTS data_requests (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  subject      TEXT    NOT NULL,          -- data subject email
+  type         TEXT    NOT NULL DEFAULT 'export',
+  status       TEXT    NOT NULL DEFAULT 'pending', -- pending -> completed | failed
+  result_json  TEXT,                      -- stored export bundle
+  requested_by INTEGER REFERENCES users(id),
+  created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+  completed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_data_requests_status ON data_requests (status);
+
 -- EXTENSION — product documents (briefs/spec sheets) uploaded to ground AI
 -- content generation for new products. We store the extracted text, not the file.
 CREATE TABLE IF NOT EXISTS product_documents (
