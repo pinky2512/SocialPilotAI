@@ -13,15 +13,18 @@ export default function ContentStudio() {
   const [documentId, setDocumentId] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [learning, setLearning] = useState(null);
 
   async function refresh() {
     try {
-      const [{ content }, { documents }] = await Promise.all([
+      const [{ content }, { documents }, { learning }] = await Promise.all([
         api.listContent(userId),
         api.listDocuments(userId),
+        api.feedbackSummary(userId),
       ]);
       setItems(content);
       setDocuments(documents);
+      setLearning(learning);
     } catch (e) {
       setError(e.message);
     }
@@ -130,6 +133,32 @@ export default function ContentStudio() {
         {error && <div className="error">{error}</div>}
       </section>
 
+      {/* STORY-031 — AI learning from user feedback. 👍/👎 on each draft feeds
+          this summary; the guidance below is injected into the NEXT generation. */}
+      <section className="panel">
+        <h2>Learning from feedback</h2>
+        <p className="hint">
+          Rate drafts with 👍 / 👎 below. Negative feedback becomes guidance that shapes future AI drafts.
+        </p>
+        {learning ? (
+          <div>
+            <div className="kpis">
+              <div className="kpi"><div className="kpi-value">{learning.up}</div><div className="kpi-label">👍 Positive</div></div>
+              <div className="kpi"><div className="kpi-value">{learning.down}</div><div className="kpi-label">👎 Negative</div></div>
+              <div className="kpi"><div className="kpi-value">{learning.total}</div><div className="kpi-label">Total ratings</div></div>
+            </div>
+            <p className="hint" style={{ marginTop: 10 }}>
+              <strong>Guidance applied to new drafts:</strong>{' '}
+              {learning.guidance
+                ? <span style={{ color: 'var(--accent-2)' }}>{learning.guidance}</span>
+                : <em>none yet — give a 👎 with a comment to steer future drafts.</em>}
+            </p>
+          </div>
+        ) : (
+          <p className="hint">No feedback yet.</p>
+        )}
+      </section>
+
       <section className="panel">
         <h2>Your content</h2>
         {items.length === 0 && <p className="hint">No content yet — generate a draft above.</p>}
@@ -188,6 +217,7 @@ function DraftCard({ item, userId, onChanged }) {
     try {
       const comment = rating === 'down' ? (window.prompt('What was wrong? (helps future AI drafts)') || '') : '';
       await api.contentFeedback(userId, item.id, rating, comment);
+      onChanged(); // refresh the "Learning from feedback" summary above
     } catch (e) {
       setError(e.message);
     }

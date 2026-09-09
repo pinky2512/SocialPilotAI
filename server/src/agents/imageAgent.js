@@ -105,6 +105,90 @@ const MIME_EXT = {
 };
 
 /**
+ * restyleImage — take a real product photo and re-render it in a described
+ * environment / lighting / color grade using the OpenAI Images *edits* API.
+ * The product itself is preserved; only the scene around it changes. Same
+ * lifecycle as any image: saved as 'draft', held for approval before use.
+ *
+ * Without an OPENAI_API_KEY the original photo is kept unchanged (labeled) so
+ * the feature stays runnable offline. SWAP-IN POINT: restyleBytes().
+ * @returns {Promise<object>} the content_images row.
+ */
+export async function restyleImage({ userId, dataUrl, prompt, contentId = null, size = '1024x1024' }) {
+  if (!prompt || !prompt.trim()) throw new Error('restyleImage requires a prompt (the scene/color grade)');
+  const m = typeof dataUrl === 'string' && dataUrl.match(/^data:(.+?);base64,(.*)$/s);
+  if (!m) throw new Error('restyleImage requires a base64 data URL of the product photo');
+  const srcMime = m[1];
+  if (!MIME_EXT[srcMime] || srcMime === 'image/svg+xml') {
+    throw new Error(`unsupported source image type '${srcMime}' (use PNG, JPG or WEBP)`);
+  }
+  const srcBytes = Buffer.from(m[2], 'base64');
+  if (srcBytes.length === 0) throw new Error('empty image');
+
+  const taskId = startTask({ agentId: AGENT_ID, taskType: 'restyleImage' });
+  try {
+    const { bytes, mime, ext, source } = await restyleBytes({ srcBytes, srcMime, prompt, size });
+
+    const info = run(
+      "INSERT INTO content_images (content_id, prompt, status, source, created_by) VALUES (?, ?, 'draft', ?, ?)",
+      [contentId, prompt, source, userId]
+    );
+    const id = info.lastInsertRowid;
+    mkdirSync(IMAGE_DIR, { recursive: true });
+    const filePath = join(IMAGE_DIR, `${id}.${ext}`);
+    writeFileSync(filePath, bytes);
+    run('UPDATE content_images SET file_path = ?, mime = ? WHERE id = ?', [filePath, mime, id]);
+
+    logAction({ userId, action: 'image.restyled', details: { imageId: id, prompt, source, contentId } });
+    finishTask(taskId, 'done');
+    broker.publish('imageGenerated', { imageId: id, userId });
+    return get('SELECT * FROM content_images WHERE id = ?', [id]);
+  } catch (err) {
+    finishTask(taskId, 'failed');
+    throw err;
+  }
+}
+
+/**
+ * SWAP-IN POINT — re-render a product photo into a described scene.
+ * Uses the OpenAI Images *edits* API when OPENAI_API_KEY is set; otherwise
+ * returns the original photo unchanged so the flow stays runnable offline.
+ * @returns {Promise<{bytes: Buffer, mime: string, ext: string, source: string}>}
+ */
+async function restyleBytes({ srcBytes, srcMime, prompt, size }) {
+  if (!process.env.OPENAI_API_KEY) {
+    // Offline: keep the uploaded product photo as-is (no re-render available).
+    return { bytes: srcBytes, mime: srcMime, ext: MIME_EXT[srcMime], source: 'restyle-placeholder' };
+  }
+  const form = new FormData();
+  form.append('model', IMAGE_MODEL);
+  form.append('prompt', prompt);
+  form.append('size', size);
+  form.append('n', '1');
+  form.append('image', new Blob([srcBytes], { type: srcMime }), `product.${MIME_EXT[srcMime]}`);
+
+  const res = await fetch(`${IMAGE_BASE_URL}/images/edits`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Image edit API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  const item = data?.data?.[0] || {};
+  if (item.b64_json) {
+    return { bytes: Buffer.from(item.b64_json, 'base64'), mime: 'image/png', ext: 'png', source: `openai-edit:${IMAGE_MODEL}` };
+  }
+  if (item.url) {
+    const img = await fetch(item.url);
+    return { bytes: Buffer.from(await img.arrayBuffer()), mime: 'image/png', ext: 'png', source: `openai-edit:${IMAGE_MODEL}` };
+  }
+  throw new Error('Image edit API returned no image data');
+}
+
+/**
  * uploadImage — store a user-provided image (for new products you can't
  * AI-generate). Accepts a data URL (data:image/...;base64,...). Same lifecycle
  * as a generated image: saved as 'draft', held for approval before use.

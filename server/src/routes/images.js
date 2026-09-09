@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
-import { generateImage, uploadImage, submitImageForApproval, listImages, getImage } from '../agents/imageAgent.js';
+import { generateImage, uploadImage, restyleImage, submitImageForApproval, listImages, getImage } from '../agents/imageAgent.js';
 
 const router = Router();
 
@@ -26,6 +26,18 @@ router.post('/upload', requireUser, (req, res) => {
   const { dataUrl, label, contentId } = req.body || {};
   try {
     const image = uploadImage({ userId: req.user.id, dataUrl, label, contentId: contentId ?? null });
+    res.status(201).json({ image });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Restyle a product photo into a described scene/color grade.
+// POST /api/images/restyle { dataUrl, prompt, contentId?, size? }
+router.post('/restyle', requireUser, async (req, res) => {
+  const { dataUrl, prompt, contentId, size } = req.body || {};
+  try {
+    const image = await restyleImage({ userId: req.user.id, dataUrl, prompt, contentId: contentId ?? null, size });
     res.status(201).json({ image });
   } catch (err) {
     res.status(400).json({ error: err.message });

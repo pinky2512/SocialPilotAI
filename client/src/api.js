@@ -34,12 +34,15 @@ export const api = {
     request(`/api/content/${id}/publish`, { method: 'POST', userId }),
   contentFeedback: (userId, id, rating, comment) =>
     request(`/api/content/${id}/feedback`, { method: 'POST', body: { rating, comment }, userId }),
+  feedbackSummary: (userId) => request('/api/content/feedback/summary', { userId }),
 
   // Images
   generateImage: (userId, payload) =>
     request('/api/images/generate', { method: 'POST', body: payload, userId }),
   uploadImage: (userId, payload) =>
     request('/api/images/upload', { method: 'POST', body: payload, userId }),
+  restyleImage: (userId, payload) =>
+    request('/api/images/restyle', { method: 'POST', body: payload, userId }),
   listImages: (userId, status) =>
     request(`/api/images${status ? `?status=${status}` : ''}`, { userId }),
   submitImage: (userId, id) =>
@@ -57,6 +60,8 @@ export const api = {
     request('/api/social/accounts', { method: 'POST', body: payload, userId }),
   disconnectAccount: (userId, id) =>
     request(`/api/social/accounts/${id}`, { method: 'DELETE', userId }),
+  oauthProviders: (userId) => request('/api/social/oauth/providers', { userId }),
+  oauthConnectUrl: (userId, provider) => request(`/api/social/oauth/${provider}/connect`, { userId }),
   platforms: (userId) => request('/api/social/platforms', { userId }),
   preview: (userId, text, platforms) =>
     request('/api/social/preview', { method: 'POST', body: { text, platforms }, userId }),
@@ -73,6 +78,7 @@ export const api = {
     request(`/api/email/campaigns${status ? `?status=${status}` : ''}`, { userId }),
   createCampaign: (userId, payload) =>
     request('/api/email/campaigns', { method: 'POST', body: payload, userId }),
+  emailProviderStatus: (userId) => request('/api/email/provider/status', { userId }),
   scheduleCampaign: (userId, id, scheduledAt) =>
     request(`/api/email/campaigns/${id}/schedule`, { method: 'POST', body: { scheduledAt }, userId }),
   sendCampaign: (userId, id) =>

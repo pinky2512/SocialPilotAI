@@ -1,5 +1,6 @@
 // Server entrypoint. Ensures the schema exists, then listens.
 
+import './loadEnv.js'; // MUST be first — loads server/.env before any env reads
 import { getDb } from './db/index.js';
 import { createApp } from './app.js';
 import { enableRealtimeScoring } from './agents/leadScoringAgent.js';

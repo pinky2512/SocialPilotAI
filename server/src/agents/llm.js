@@ -49,7 +49,9 @@ function buildPrompt({ prompt, platform, tone, guidance, context }) {
   const system =
     'You are a marketing copywriter for Social Pilot AI. Write a single, ready-to-post ' +
     "social media post based on the user's brief. Return ONLY the post text — no preamble, " +
-    'no explanations, no surrounding quotes.';
+    'no explanations, no surrounding quotes. Do NOT add a title, heading, label, or section ' +
+    'name, and do NOT start the post with a "#" heading (hashtags belong only at the end as tags). ' +
+    'Begin directly with the post copy.';
   // STORY-031 — inject learning guidance derived from past user feedback.
   const learn = guidance ? `\n\nGuidance from past feedback: ${guidance}` : '';
   // Document grounding — write ONLY from the provided product facts (new products).

@@ -50,6 +50,11 @@ function runMigrations() {
     'ALTER TABLE social_posts ADD COLUMN image_id INTEGER',
     'ALTER TABLE audit_log ADD COLUMN prev_hash TEXT',
     'ALTER TABLE audit_log ADD COLUMN hash TEXT',
+    // Real OAuth social linking (LinkedIn): the provider's user URN and token TTL.
+    'ALTER TABLE social_accounts ADD COLUMN external_id TEXT',
+    'ALTER TABLE social_accounts ADD COLUMN token_expires_at TEXT',
+    // Real email sending: explicit recipient list for a campaign.
+    'ALTER TABLE email_campaigns ADD COLUMN recipients TEXT',
   ];
   for (const sql of additions) {
     try { db.exec(sql); } catch { /* column already exists — ignore */ }

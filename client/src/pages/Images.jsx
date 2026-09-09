@@ -74,6 +74,8 @@ export default function Images() {
 
   return (
     <div>
+      <Restyle userId={userId} onChanged={refresh} />
+
       <section className="panel">
         <h2>Generate a marketing image</h2>
         <p className="hint">
@@ -124,5 +126,84 @@ export default function Images() {
         </div>
       </section>
     </div>
+  );
+}
+
+// EXTENSION — restyle a real product photo into a described scene / color grade.
+// Upload your product shot, describe the environment + lighting + color grading,
+// and the AI re-renders the product in that setting. Held for approval like any image.
+function Restyle({ userId, onChanged }) {
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  function pick(e) {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    setError('');
+    if (!f) return;
+    if (!/^image\/(png|jpe?g|webp)$/.test(f.type)) {
+      setError('Please choose a PNG, JPG or WEBP photo.');
+      return;
+    }
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  }
+
+  async function restyle(e) {
+    e.preventDefault();
+    if (!file) { setError('Choose a product photo first.'); return; }
+    setBusy(true);
+    setError('');
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      await api.restyleImage(userId, { dataUrl, prompt });
+      setFile(null); setPreview(''); setPrompt('');
+      await onChanged();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="panel">
+      <h2>Restyle a product photo</h2>
+      <p className="hint">
+        Upload a photo of your real product and describe the scene, lighting and colour grade —
+        the AI re-renders the product in that setting. Needs <code>OPENAI_API_KEY</code>; without it
+        the original photo is kept unchanged. Result is held for approval like any image.
+      </p>
+      <form onSubmit={restyle} className="gen-form">
+        <div className="row">
+          <label className="upload-btn">
+            {file ? 'Change photo' : 'Choose product photo'}
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={pick} hidden />
+          </label>
+          {preview && <img className="img-preview" src={preview} alt="chosen product" style={{ maxHeight: 96, width: 'auto' }} />}
+        </div>
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="e.g. Place this product on a wet marble countertop by a bright window, soft morning daylight from the left, fresh eucalyptus leaves in the background, cool clean colour grade with airy highlights and gentle shadows, luxury skincare mood"
+          rows={3}
+          required
+        />
+        <div className="card-actions">
+          <button className="primary" type="submit" disabled={busy || !file || !prompt.trim()}>
+            {busy ? 'Restyling…' : 'Restyle with AI'}
+          </button>
+        </div>
+      </form>
+      {error && <div className="error">{error}</div>}
+    </section>
   );
 }
