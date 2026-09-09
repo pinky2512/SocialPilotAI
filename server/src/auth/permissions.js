@@ -19,6 +19,11 @@ export const PERMISSIONS = Object.freeze({
   EMAIL_SEND: 'email:send',
   EMAIL_APPROVE: 'email:approve',
 
+  // Content approval (STORY-036) — the right to approve/reject held items in the
+  // approval queue. Separation of duties: Campaign Managers create, only an
+  // Administrator approves. Administrator holds it via the '*' wildcard.
+  CONTENT_APPROVE: 'content:approve',
+
   // Analytics features (STORY-027)
   ANALYTICS_VIEW: 'analytics:view',     // dashboards, metrics, predictions
   ANALYTICS_INGEST: 'analytics:ingest', // write engagement telemetry

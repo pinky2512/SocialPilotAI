@@ -6,6 +6,8 @@
 
 import { Router } from 'express';
 import { requireUser } from '../http/currentUser.js';
+import { requirePermission } from '../http/rbac.js';
+import { PERMISSIONS } from '../auth/permissions.js';
 import { submitForApproval, decide, listPending } from '../agents/governanceAgent.js';
 import { get, all } from '../db/index.js';
 
@@ -29,7 +31,9 @@ router.get('/pending', requireUser, (_req, res) => {
 });
 
 // Approve a held item.  POST /api/approvals/:id/approve
-router.post('/:id/approve', requireUser, (req, res) => {
+// STORY-036 — only a role with content:approve may decide (Administrator).
+// Denied attempts are audited as access.denied by requirePermission.
+router.post('/:id/approve', requireUser, requirePermission(PERMISSIONS.CONTENT_APPROVE), (req, res) => {
   try {
     const result = decide({
       approvalId: Number(req.params.id),
@@ -43,7 +47,8 @@ router.post('/:id/approve', requireUser, (req, res) => {
 });
 
 // Reject a held item.  POST /api/approvals/:id/reject { reason? }
-router.post('/:id/reject', requireUser, (req, res) => {
+// STORY-036 — same content:approve gate as approve.
+router.post('/:id/reject', requireUser, requirePermission(PERMISSIONS.CONTENT_APPROVE), (req, res) => {
   try {
     const result = decide({
       approvalId: Number(req.params.id),

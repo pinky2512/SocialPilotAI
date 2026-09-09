@@ -5,7 +5,8 @@ import { api } from '../api.js';
 // STORY-002 — approver view. Pending drafts held at the approval gate; a human
 // approves or rejects. Content can only go live once approved here.
 export default function ApprovalQueue() {
-  const { userId } = useSession();
+  const { userId, can } = useSession();
+  const canApprove = can('content:approve'); // STORY-036 — only approvers decide
   const [pending, setPending] = useState([]);
   const [error, setError] = useState('');
 
@@ -38,6 +39,11 @@ export default function ApprovalQueue() {
       <section className="panel">
         <h2>Pending approvals</h2>
         <p className="hint">Human-in-the-loop: AI proposes, you approve. Every decision is audited.</p>
+        {!canApprove && (
+          <p className="hint" style={{ color: 'var(--warn, #d08a3a)' }}>
+            Your role can view the queue but not approve or reject — only an Administrator decides (STORY-036).
+          </p>
+        )}
         {error && <div className="error">{error}</div>}
         {pending.length === 0 && <p className="hint">Nothing waiting for approval. 🎉</p>}
         <div className="cards">
@@ -55,10 +61,12 @@ export default function ApprovalQueue() {
               {p.kind === 'post' && p.image_id && (
                 <img className="img-preview" src={api.imageUrl(p.image_id)} alt="attached" />
               )}
-              <div className="card-actions">
-                <button className="primary" onClick={() => act('approve', p.approval_id)}>Approve</button>
-                <button className="danger" onClick={() => act('reject', p.approval_id)}>Reject</button>
-              </div>
+              {canApprove && (
+                <div className="card-actions">
+                  <button className="primary" onClick={() => act('approve', p.approval_id)}>Approve</button>
+                  <button className="danger" onClick={() => act('reject', p.approval_id)}>Reject</button>
+                </div>
+              )}
             </div>
           ))}
         </div>
