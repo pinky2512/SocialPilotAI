@@ -6,12 +6,14 @@
 // publishing. This agent never lets a post reach 'published' without an approved
 // approval_processes row (enforced in publishPost + trust/approvals.js).
 
+import { readFileSync } from 'node:fs';
 import { run, get, all } from '../db/index.js';
 import { logAction } from '../trust/audit.js';
 import { startTask, finishTask } from './taskTracker.js';
 import { broker } from '../broker/index.js';
 import { SUPPORTED_PLATFORMS, PLATFORM_RULES, adaptForPlatform, validateForPlatform, rulesFor } from './platformRules.js';
 import { holdForApproval } from '../trust/approvals.js';
+import { getProvider } from '../integrations/oauthProviders.js';
 
 const AGENT_ID = 'social-media-posting-agent';
 
@@ -53,6 +55,46 @@ export function connectAccount({ userId, platform, handle, accessToken = null })
 
   logIntegration(platform, 'connect', 'success', { userId, handle, accountId: account.id });
   logAction({ userId, action: 'social.account_connected', details: { accountId: account.id, platform, handle } });
+  broker.publish('socialAccountConnected', { accountId: account.id, userId, platform });
+  return account;
+}
+
+/**
+ * Store a REAL social account linked via OAuth (see integrations/*). Unlike
+ * connectAccount's dev placeholder, this persists the live access token and the
+ * provider's user id (external_id) so publishPostLive can post to the real feed.
+ * Works for any registered provider (LinkedIn today; Facebook/Twitter later).
+ * @returns {object} the social_accounts row.
+ */
+export function connectOAuthAccount({ userId, platform, handle, accessToken, externalId, expiresIn = null }) {
+  if (!platform) throw new Error('platform is required');
+  if (!accessToken) throw new Error('accessToken is required');
+  if (!externalId) throw new Error('externalId (provider user id) is required');
+  const handleName = (handle && handle.trim()) || `${platform} account`;
+  const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
+
+  const existing = get(
+    'SELECT * FROM social_accounts WHERE user_id = ? AND platform = ? AND handle = ?',
+    [userId, platform, handleName]
+  );
+  if (existing) {
+    run(
+      "UPDATE social_accounts SET status = 'connected', access_token = ?, external_id = ?, token_expires_at = ? WHERE id = ?",
+      [accessToken, externalId, tokenExpiresAt, existing.id]
+    );
+  } else {
+    run(
+      `INSERT INTO social_accounts (user_id, platform, handle, access_token, external_id, token_expires_at, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'connected')`,
+      [userId, platform, handleName, accessToken, externalId, tokenExpiresAt]
+    );
+  }
+  const account = get(
+    'SELECT * FROM social_accounts WHERE user_id = ? AND platform = ? AND handle = ?',
+    [userId, platform, handleName]
+  );
+  logIntegration(platform, 'connect', 'success', { userId, handle: handleName, accountId: account.id, real: true });
+  logAction({ userId, action: 'social.account_connected', details: { accountId: account.id, platform, handle: handleName, real: true } });
   broker.publish('socialAccountConnected', { accountId: account.id, userId, platform });
   return account;
 }
@@ -197,34 +239,95 @@ export function listPosts({ status } = {}) {
 export function publishPost({ postId, userId = null }) {
   const post = get('SELECT * FROM social_posts WHERE id = ?', [postId]);
   if (!post) throw new Error(`post ${postId} not found`);
-  if (post.status !== 'approved') {
+  // 'failed' is a prior publish attempt that already passed approval — retryable.
+  if (!['approved', 'failed'].includes(post.status)) {
     throw new Error(`post ${postId} is '${post.status}' — only approved posts can be published`);
   }
 
   const taskId = startTask({ agentId: AGENT_ID, taskType: 'publishPost' });
   try {
-    // --- SWAP-IN POINT: real platform API call --------------------------------
-    // input:  { platform, handle, text, accessToken }
-    // output: { externalId }  (id of the created post on the platform)
+    // SIMULATED platform post. For a REAL LinkedIn post, publishPostLive() below
+    // calls the live API; this synchronous path keeps the demo + tests runnable.
     const externalId = `${post.platform}-${postId}-${post.account_id}`;
-    // -------------------------------------------------------------------------
-
-    run(
-      "UPDATE social_posts SET status = 'published', published_at = datetime('now') WHERE id = ?",
-      [postId]
-    );
-    logIntegration(post.platform, 'publish', 'success', { postId, externalId, accountId: post.account_id });
-    logAction({
-      userId,
-      action: 'social.post_published',
-      details: { postId, platform: post.platform, accountId: post.account_id, externalId },
-    });
+    const result = markPublished({ post, externalId, userId });
     finishTask(taskId, 'done');
-    broker.publish('postPublished', { postId, platform: post.platform, externalId });
-    return get('SELECT * FROM social_posts WHERE id = ?', [postId]);
+    return result;
   } catch (err) {
     run("UPDATE social_posts SET status = 'failed' WHERE id = ?", [postId]);
     logIntegration(post.platform, 'publish', 'failed', { postId, error: String(err?.message || err) });
+    finishTask(taskId, 'failed');
+    throw err;
+  }
+}
+
+/**
+ * Load a post's attached image as bytes for a real platform upload, or null.
+ * Skips SVG (placeholder images) since LinkedIn/most platforms reject vector.
+ * @returns {{bytes: Buffer, mime: string, altText: string}|null}
+ */
+function loadPostImage(post) {
+  if (!post.image_id) return null;
+  const img = get('SELECT * FROM content_images WHERE id = ?', [post.image_id]);
+  if (!img || !img.file_path || !img.mime || img.mime === 'image/svg+xml') return null;
+  try {
+    return { bytes: readFileSync(img.file_path), mime: img.mime, altText: String(post.post_text || '').slice(0, 120) };
+  } catch {
+    return null; // file missing → post text-only rather than fail the publish
+  }
+}
+
+/** Mark a post published and record it (integration log + audit + broker). */
+function markPublished({ post, externalId, userId }) {
+  run(
+    "UPDATE social_posts SET status = 'published', published_at = datetime('now') WHERE id = ?",
+    [post.id]
+  );
+  logIntegration(post.platform, 'publish', 'success', { postId: post.id, externalId, accountId: post.account_id });
+  logAction({
+    userId,
+    action: 'social.post_published',
+    details: { postId: post.id, platform: post.platform, accountId: post.account_id, externalId },
+  });
+  broker.publish('postPublished', { postId: post.id, platform: post.platform, externalId });
+  return get('SELECT * FROM social_posts WHERE id = ?', [post.id]);
+}
+
+/**
+ * STORY-007 (live) — publish an approved post, using the REAL platform API when
+ * the target account is a live-linked LinkedIn account; otherwise falls back to
+ * the simulated publishPost. This is the route-facing publisher.
+ * @returns {Promise<object>} the published social_posts row.
+ */
+export async function publishPostLive({ postId, userId = null }) {
+  const post = get('SELECT * FROM social_posts WHERE id = ?', [postId]);
+  if (!post) throw new Error(`post ${postId} not found`);
+  // 'failed' is a prior publish attempt that already passed approval — retryable.
+  if (!['approved', 'failed'].includes(post.status)) {
+    throw new Error(`post ${postId} is '${post.status}' — only approved posts can be published`);
+  }
+  const account = get('SELECT * FROM social_accounts WHERE id = ?', [post.account_id]);
+  const provider = account ? getProvider(account.platform) : undefined;
+  const isLive =
+    provider && provider.module.isConfigured() && account.external_id &&
+    account.access_token && !String(account.access_token).startsWith('dev-token');
+
+  // No live provider/credentials → simulated path (all other platforms + dev tokens).
+  if (!isLive) return publishPost({ postId, userId });
+
+  const taskId = startTask({ agentId: AGENT_ID, taskType: 'publishPostLive' });
+  try {
+    const { externalId } = await provider.module.publishTextPost({
+      accessToken: account.access_token,
+      authorSub: account.external_id,
+      text: post.post_text,
+      image: loadPostImage(post),
+    });
+    const result = markPublished({ post, externalId, userId });
+    finishTask(taskId, 'done');
+    return result;
+  } catch (err) {
+    run("UPDATE social_posts SET status = 'failed' WHERE id = ?", [postId]);
+    logIntegration(account.platform, 'publish', 'failed', { postId, error: String(err?.message || err) });
     finishTask(taskId, 'failed');
     throw err;
   }

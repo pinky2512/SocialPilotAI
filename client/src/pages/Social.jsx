@@ -53,6 +53,28 @@ function Accounts({ userId, accounts, onChanged }) {
   const [platform, setPlatform] = useState('twitter');
   const [handle, setHandle] = useState('');
   const [error, setError] = useState('');
+  const [providers, setProviders] = useState([]);
+  const [realProvider, setRealProvider] = useState('linkedin');
+  const [notice, setNotice] = useState('');
+
+  useEffect(() => {
+    api.oauthProviders(userId).then((r) => {
+      setProviders(r.providers || []);
+      const firstReady = (r.providers || []).find((p) => p.available && p.configured);
+      if (firstReady) setRealProvider(firstReady.id);
+    }).catch(() => {});
+    // Surface the result of the OAuth round-trip (callback redirects with ?linked=…).
+    const q = new URLSearchParams(window.location.search);
+    const linked = q.get('linked');
+    if (linked && linked !== 'error') {
+      setNotice(`✅ ${linked} account linked.`);
+      onChanged();
+      window.history.replaceState({}, '', '/social'); // clear the query
+    } else if (linked === 'error') {
+      setError(`Linking failed: ${q.get('reason') || 'unknown'}`);
+      window.history.replaceState({}, '', '/social');
+    }
+  }, [userId]);
 
   async function connect(e) {
     e.preventDefault();
@@ -66,9 +88,44 @@ function Accounts({ userId, accounts, onChanged }) {
     }
   }
 
+  async function connectReal() {
+    setError('');
+    try {
+      const { url } = await api.oauthConnectUrl(userId, realProvider);
+      window.location.href = url; // hand off to the provider's consent screen
+    } catch (e) {
+      setError(e.message);
+    }
+  }
+
+  // Label a provider option, showing why it isn't selectable yet.
+  const optLabel = (p) =>
+    !p.available ? `${p.label} (coming soon)` : !p.configured ? `${p.label} (setup needed)` : p.label;
+  const selected = providers.find((p) => p.id === realProvider);
+
   return (
     <section className="panel">
       <h2>Connected accounts</h2>
+      {notice && <p className="hint" style={{ color: 'var(--accent-2)' }}>{notice}</p>}
+      {canConnect && providers.length > 0 && (
+        <div className="row" style={{ marginBottom: 12, alignItems: 'flex-end' }}>
+          <label>
+            Link a real account
+            <select value={realProvider} onChange={(e) => setRealProvider(e.target.value)}>
+              {providers.map((p) => (
+                <option key={p.id} value={p.id} disabled={!p.available || !p.configured}>
+                  {optLabel(p)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" className="primary" onClick={connectReal} disabled={!selected || !selected.available || !selected.configured}>
+            Connect
+          </button>
+          <span className="hint">Real OAuth link — approved posts publish to your actual feed.</span>
+        </div>
+      )}
+      <h3 style={{ margin: '4px 0', fontSize: 14, color: 'var(--muted)' }}>Or add a simulated account (demo)</h3>
       {canConnect ? (
         <form onSubmit={connect} className="row">
           <label>
@@ -241,24 +298,47 @@ function Posts({ userId, posts, onChanged }) {
       {posts.length === 0 && <p className="hint">No posts yet.</p>}
       <div className="cards">
         {posts.map((p) => (
-          <div className="card" key={p.id}>
-            <div className="card-head">
-              <span className={`status status-${p.status}`}>{p.status.replace('_', ' ')}</span>
-              <span className="cid">{p.platform} #{p.id}</span>
-            </div>
-            <p className="body">{p.post_text}</p>
-            {p.image_id && <img className="img-preview" src={api.imageUrl(p.image_id)} alt="attached" />}
-            {p.scheduled_at && <p className="hint">Scheduled: {p.scheduled_at}</p>}
-            {p.status === 'approved' && canPublish && (
-              <div className="card-actions">
-                <button className="primary" onClick={() => api.publishPost(userId, p.id).then(onChanged)}>
-                  Publish now
-                </button>
-              </div>
-            )}
-          </div>
+          <PostCard key={p.id} p={p} userId={userId} canPublish={canPublish} onChanged={onChanged} />
         ))}
       </div>
     </section>
+  );
+}
+
+function PostCard({ p, userId, canPublish, onChanged }) {
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const failed = p.status === 'failed';
+
+  async function publish() {
+    setError(''); setBusy(true);
+    try {
+      await api.publishPost(userId, p.id);
+      await onChanged();
+    } catch (e) {
+      setError(e.message); // surface the real platform error instead of a silent FAILED
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card">
+      <div className="card-head">
+        <span className={`status status-${p.status}`}>{p.status.replace('_', ' ')}</span>
+        <span className="cid">{p.platform} #{p.id}</span>
+      </div>
+      <p className="body">{p.post_text}</p>
+      {p.image_id && <img className="img-preview" src={api.imageUrl(p.image_id)} alt="attached" />}
+      {p.scheduled_at && <p className="hint">Scheduled: {p.scheduled_at}</p>}
+      {error && <div className="error">{error}</div>}
+      {(p.status === 'approved' || failed) && canPublish && (
+        <div className="card-actions">
+          <button className="primary" onClick={publish} disabled={busy}>
+            {busy ? 'Publishing…' : failed ? 'Retry publish' : 'Publish now'}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
