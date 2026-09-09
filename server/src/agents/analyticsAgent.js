@@ -223,9 +223,21 @@ export function invalidateAnalyticsCaches() {
 // recomputes. This preserves real-time correctness while absorbing poll bursts.
 broker.subscribe('newCampaignData', () => invalidateAnalyticsCaches());
 
-/** Predictive insights for every campaign — dashboard forecast column. */
-export function allPredictiveInsights() {
-  return all('SELECT id FROM email_campaigns ORDER BY id DESC').map((c) => generatePredictiveInsights({ campaignId: c.id }));
+/** Predictive insights for every campaign — dashboard forecast column.
+ *  STORY-023 — an explicit bulk request (Analytics page / Refresh) writes ONE
+ *  summary audit entry, not one per campaign, keeping the trail meaningful.
+ *  Per-campaign forecasts stay un-audited so background polls don't flood it. */
+export function allPredictiveInsights({ actorId = null, audit = false } = {}) {
+  const insights = all('SELECT id FROM email_campaigns ORDER BY id DESC')
+    .map((c) => generatePredictiveInsights({ campaignId: c.id }));
+  if (audit) {
+    logAction({
+      userId: actorId,
+      action: 'analytics.predictive_generated',
+      details: { scope: 'all-campaigns', campaigns: insights.length },
+    });
+  }
+  return insights;
 }
 
 // --- STORY-018: real-time metrics dashboard -------------------------------
@@ -352,8 +364,19 @@ export function generateRecommendations({ campaignId, actorId = null, audit = fa
   return done();
 }
 
-export function allRecommendations() {
-  return all('SELECT id FROM email_campaigns ORDER BY id DESC').map((c) => generateRecommendations({ campaignId: c.id }));
+/** STORY-023 — bulk recommendations write ONE summary audit entry on an
+ *  explicit request; per-campaign calls stay un-audited to avoid poll flooding. */
+export function allRecommendations({ actorId = null, audit = false } = {}) {
+  const results = all('SELECT id FROM email_campaigns ORDER BY id DESC')
+    .map((c) => generateRecommendations({ campaignId: c.id }));
+  if (audit) {
+    logAction({
+      userId: actorId,
+      action: 'analytics.recommendations_generated',
+      details: { scope: 'all-campaigns', campaigns: results.length },
+    });
+  }
+  return results;
 }
 
 export function updateDashboard() {

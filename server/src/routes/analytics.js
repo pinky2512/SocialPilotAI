@@ -23,6 +23,31 @@ import {
 
 const router = Router();
 
+// --- SendGrid Event Webhook (PUBLIC — defined before the auth middleware) -----
+// Real-time email engagement: SendGrid POSTs an array of events here as
+// recipients open/click. Guarded by a shared secret in the URL since the caller
+// is SendGrid, not a logged-in user. Maps SendGrid event names onto our types
+// and attributes each to a campaign via the custom_arg we sent (campaign_id).
+// 'delivered' is skipped here — it's already recorded at send time.
+const SENDGRID_EVENT_MAP = { open: 'open', click: 'click', bounce: 'bounce', dropped: 'bounce', unsubscribe: 'unsubscribe', group_unsubscribe: 'unsubscribe' };
+
+router.post('/email/sendgrid-events', (req, res) => {
+  const secret = process.env.SENDGRID_WEBHOOK_SECRET;
+  if (!secret || req.query.secret !== secret) return res.status(403).json({ error: 'forbidden' });
+  const events = Array.isArray(req.body) ? req.body : [];
+  let recorded = 0;
+  for (const ev of events) {
+    const eventType = SENDGRID_EVENT_MAP[ev.event];
+    const campaignId = ev.campaign_id != null ? Number(ev.campaign_id) : null;
+    if (!eventType || !campaignId) continue;
+    try {
+      recordEngagementEvent({ campaignId, recipient: ev.email || null, eventType, details: { via: 'sendgrid', url: ev.url } });
+      recorded++;
+    } catch { /* ignore unknown/duplicate — webhook must always 200 */ }
+  }
+  res.json({ received: events.length, recorded });
+});
+
 // STORY-027 — RBAC for analytics features. Reads require analytics:view (both
 // roles); writing engagement telemetry requires analytics:ingest (admin only).
 router.use(requireUser, (req, res, next) => {
@@ -77,8 +102,9 @@ router.get('/predict/:campaignId', requireUser, (req, res) => {
 
 // STORY-017 — predictive insights for all campaigns + baseline.
 // GET /api/analytics/predict
-router.get('/predict', requireUser, (_req, res) => {
-  res.json({ baseline: historicalBaseline(), insights: allPredictiveInsights() });
+router.get('/predict', requireUser, (req, res) => {
+  // STORY-023: an explicit bulk forecast request is audited (one summary entry).
+  res.json({ baseline: historicalBaseline(), insights: allPredictiveInsights({ actorId: req.user.id, audit: true }) });
 });
 
 // STORY-020 — unified cross-channel overview.  GET /api/analytics/overview
@@ -99,8 +125,9 @@ router.get('/dashboard', requireUser, (_req, res) => {
 
 // STORY-019 — optimization recommendations.
 // GET /api/analytics/recommendations  (all)  |  /recommendations/:campaignId
-router.get('/recommendations', requireUser, (_req, res) => {
-  res.json({ recommendations: allRecommendations() });
+router.get('/recommendations', requireUser, (req, res) => {
+  // STORY-023: an explicit bulk recommendation request is audited (one summary entry).
+  res.json({ recommendations: allRecommendations({ actorId: req.user.id, audit: true }) });
 });
 router.get('/recommendations/:campaignId', requireUser, (req, res) => {
   try {

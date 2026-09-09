@@ -10,17 +10,27 @@ import { PERMISSIONS } from '../auth/permissions.js';
 import {
   createEmailCampaign,
   scheduleEmail,
-  sendEmail,
+  sendEmailLive,
   listCampaigns,
 } from '../agents/emailCampaignAgent.js';
+import * as sendgrid from '../integrations/sendgrid.js';
 
 const router = Router();
 
-// Create a campaign draft.  POST /api/email/campaigns { name, subject, body, audience? }
+// Is real email sending configured?  GET /api/email/provider/status
+// Also returns default recipients so the campaign form can pre-fill them.
+router.get('/provider/status', requireUser, (_req, res) => {
+  res.json({
+    configured: sendgrid.isConfigured(),
+    defaultRecipients: process.env.DEFAULT_EMAIL_RECIPIENTS || '',
+  });
+});
+
+// Create a campaign draft.  POST /api/email/campaigns { name, subject, body, audience?, recipients? }
 router.post('/campaigns', requireUser, requirePermission(PERMISSIONS.EMAIL_CREATE), (req, res) => {
-  const { name, subject, body, audience } = req.body || {};
+  const { name, subject, body, audience, recipients } = req.body || {};
   try {
-    const campaign = createEmailCampaign({ userId: req.user.id, name, subject, body, audience });
+    const campaign = createEmailCampaign({ userId: req.user.id, name, subject, body, audience, recipients });
     res.status(201).json({ campaign });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -47,9 +57,10 @@ router.post('/campaigns/:id/schedule', requireUser, requirePermission(PERMISSION
 });
 
 // Send an approved campaign.  POST /api/email/campaigns/:id/send
-router.post('/campaigns/:id/send', requireUser, requirePermission(PERMISSIONS.EMAIL_SEND), (req, res) => {
+// Real ESP send when SendGrid is configured + recipients present; else simulated.
+router.post('/campaigns/:id/send', requireUser, requirePermission(PERMISSIONS.EMAIL_SEND), async (req, res) => {
   try {
-    const campaign = sendEmail({ userId: req.user.id, campaignId: Number(req.params.id) });
+    const campaign = await sendEmailLive({ userId: req.user.id, campaignId: Number(req.params.id) });
     res.json({ campaign });
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -45,16 +45,28 @@ export default function Email() {
 }
 
 function CreateForm({ userId, onChanged }) {
-  const [form, setForm] = useState({ name: '', subject: '', body: '', audience: 'all-subscribers' });
+  const [form, setForm] = useState({ name: '', subject: '', body: '', audience: 'all-subscribers', recipients: '' });
   const [error, setError] = useState('');
+  const [realSend, setRealSend] = useState(false);
+  const [defaultRecipients, setDefaultRecipients] = useState('');
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  useEffect(() => {
+    api.emailProviderStatus(userId).then((r) => {
+      setRealSend(r.configured);
+      setDefaultRecipients(r.defaultRecipients || '');
+      // Pre-fill default recipients so they don't have to be retyped each time.
+      if (r.defaultRecipients) setForm((f) => (f.recipients ? f : { ...f, recipients: r.defaultRecipients }));
+    }).catch(() => {});
+  }, [userId]);
 
   async function create(e) {
     e.preventDefault();
     setError('');
     try {
       await api.createCampaign(userId, form);
-      setForm({ name: '', subject: '', body: '', audience: 'all-subscribers' });
+      // Reset, but keep the default recipients pre-filled for the next campaign.
+      setForm({ name: '', subject: '', body: '', audience: 'all-subscribers', recipients: defaultRecipients });
       onChanged();
     } catch (e) {
       setError(e.message);
@@ -64,6 +76,11 @@ function CreateForm({ userId, onChanged }) {
   return (
     <section className="panel">
       <h2>Create an email campaign</h2>
+      <p className="hint">
+        {realSend
+          ? '✅ Real sending is ON (SendGrid) — approved campaigns with recipients are actually emailed.'
+          : 'Sending is simulated. Add SENDGRID_API_KEY + SENDGRID_FROM on the server to send for real.'}
+      </p>
       <form onSubmit={create} className="gen-form">
         <div className="row">
           <label style={{ flex: 1 }}>Name<input value={form.name} onChange={set('name')} required /></label>
@@ -71,6 +88,10 @@ function CreateForm({ userId, onChanged }) {
         </div>
         <label>Subject<input value={form.subject} onChange={set('subject')} required style={{ width: '100%' }} /></label>
         <textarea placeholder="Email body…" value={form.body} onChange={set('body')} rows={4} required />
+        <label>
+          Recipients {realSend ? '(real emails — comma or newline separated)' : '(used when real sending is enabled)'}
+          <textarea placeholder="alice@example.com, bob@example.com" value={form.recipients} onChange={set('recipients')} rows={2} style={{ width: '100%' }} />
+        </label>
         <div className="card-actions">
           <button className="primary" type="submit">Create draft</button>
         </div>
@@ -106,7 +127,11 @@ function Campaign({ c, userId, onChanged }) {
         <span className="cid">#{c.id}</span>
       </div>
       <p className="body"><strong>{c.name}</strong><br />{c.subject}</p>
-      <p className="hint">Audience: {c.audience || '—'}{c.scheduled_at ? ` · scheduled ${c.scheduled_at}` : ''}</p>
+      <p className="hint">
+        Audience: {c.audience || '—'}
+        {c.recipients ? ` · ${c.recipients.split(/[\s,;]+/).filter(Boolean).length} recipient(s)` : ''}
+        {c.scheduled_at ? ` · scheduled ${c.scheduled_at}` : ''}
+      </p>
       {error && <div className="error">{error}</div>}
       <div className="card-actions">
         {['draft', 'rejected'].includes(c.status) && can('email:create') && (
